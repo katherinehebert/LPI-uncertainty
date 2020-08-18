@@ -1,11 +1,16 @@
-# Multispecies discrete logistic population growth simulation with competition
-# for multiple pairs of populations (matrix!)
+# Script to simulate population size over time for multiple paired populations 
+# that are interacting together
+
+# Interaction coefficient is constant through time
+# All populations have the same "true" growth rate
+# Observation error is added to the growth rate (varies randomly through time)
+# Process error is added to the current population size (varies randomly thorugh time)
 
 # load packages
 require(tidyverse)
 # set ggplot theme
 theme_set(theme_linedraw() + theme(panel.grid = element_blank()))
-# set seed for randomizations
+# set seed for randomization
 set.seed(2)
 
 # parameters for simulation ----------------------------------------------------
@@ -73,3 +78,14 @@ ggplot(pops) +
   geom_line(aes(x = time, y = N, group = popID, col = pop)) + 
   ylim(c(0, max(pops$N+10))) +
   facet_wrap(~set) 
+
+# plot
+ggplot(pops) +
+  geom_line(aes(x = time, y = N, group = popID, col = pop)) + 
+  ylim(c(0, max(pops$N+10))) +
+  facet_wrap(~set) + theme(legend.position = "none")
+
+# save outputs -----------------------------------------------------------------
+saveRDS(pops, "simulations/paired_antagonistic_l.RDS")
+ggsave(filename = "paired_antagonistic_N.png", path = "figures/", plot = last_plot(),
+       width = 7, height = 5, units = "in")
