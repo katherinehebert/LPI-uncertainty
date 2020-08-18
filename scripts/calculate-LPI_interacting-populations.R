@@ -116,10 +116,11 @@ ggplot(lpi, aes(x = time)) +
   # expected 
   geom_hline(aes(yintercept = 1), lty = 2) +
   # annotations
-  annotate("text", x = 9.5, y = 2, label = "Bootstrap", colour = "blue") +
-  annotate("text", x = 9.5, y = 1.9, label = "Expected") +
-  annotate("text", x = 9.5, y = 1.8, label = "Propagation", colour = "#e7298a") +
-  ylim(c(0,2)) + labs(y = "Living Planet Index")
+  annotate("text", x = 9, y = 1.3, label = "Bootstrap", 
+           colour = "darkblue", fontface = "italic", angle = 8) +
+  annotate("text", x = 9, y = 0.75, label = "Propagation", 
+           colour = "#980043", fontface = "italic", angle = -15) +
+  ylim(c(0.5,1.5)) + labs(y = "Living Planet Index")
 
 # save outputs -----------------------------------------------------------------
 saveRDS(lpi, "outputs/paired_antagonistic_LPI.RDS")
