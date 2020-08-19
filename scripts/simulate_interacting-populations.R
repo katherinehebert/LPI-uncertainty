@@ -15,7 +15,7 @@ set.seed(2)
 
 # parameters for simulation ----------------------------------------------------
 
-n_pairs = 5 # number of population pairs to generate
+n_pairs = 25 # number of population pairs to generate
 gen = 10 # number of generations
 N0 = 100
 process = runif(n_pairs*gen, -N0/10, N0/10) # process error (environmental noise)

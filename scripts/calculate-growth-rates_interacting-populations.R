@@ -93,7 +93,8 @@ ggplot(data = dt_df, aes(x = time, group = popID)) +
   facet_wrap(~set) + 
   labs(y = "Growth rate (log10)", 
       col = "Paired \npopulations", fill = "Paired \npopulations",
-      caption = "Ribbon shows propagated standard error from GAM predictions.")
+      caption = "Ribbon shows propagated standard error from GAM predictions.") +
+  theme(legend.position = "none")
 
 # save outputs -----------------------------------------------------------------
 saveRDS(m, "outputs/paired_antagonistic_GAM.RDS")

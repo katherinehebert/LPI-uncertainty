@@ -116,10 +116,10 @@ ggplot(lpi, aes(x = time)) +
   # expected 
   geom_hline(aes(yintercept = 1), lty = 2) +
   # annotations
-  annotate("text", x = 9, y = 1.3, label = "Bootstrap", 
-           colour = "darkblue", fontface = "italic", angle = 8) +
-  annotate("text", x = 9, y = 0.75, label = "Propagation", 
-           colour = "#980043", fontface = "italic", angle = -15) +
+  annotate("text", x = 9, y = max(lpi$cihi_boot)-0.05, label = "Bootstrap", 
+           colour = "darkblue", fontface = "italic") +
+  annotate("text", x = 9, y = min(lpi$cilo_se)-0.02, label = "Propagation", 
+           colour = "#980043", fontface = "italic") +
   ylim(c(0.5,1.5)) + labs(y = "Living Planet Index")
 
 # save outputs -----------------------------------------------------------------
