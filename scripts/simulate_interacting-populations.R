@@ -77,15 +77,27 @@ pops = rbind(pops_long(popsA, set_id = "A"), pops_long(popsB, set_id = "B"))
 ggplot(pops) +
   geom_line(aes(x = time, y = N, group = popID, col = pop)) + 
   ylim(c(0, max(pops$N+10))) +
-  facet_wrap(~set) 
-
-# plot
-ggplot(pops) +
-  geom_line(aes(x = time, y = N, group = popID, col = pop)) + 
-  ylim(c(0, max(pops$N+10))) +
   facet_wrap(~set) + theme(legend.position = "none")
 
 # save outputs -----------------------------------------------------------------
 saveRDS(pops, "simulations/paired_antagonistic_l.RDS")
 ggsave(filename = "paired_antagonistic_N.png", path = "figures/", plot = last_plot(),
        width = 7, height = 5, units = "in")
+
+# calculate covariation --------------------------------------------------------
+
+pops_w = cbind(t(popsA), t(popsB))
+
+# plot covariation
+png("figures/paired_antagonistic_cov.png", width = 500, height = 500)
+cov(pops_w) %>% heatmap(Colv = NA, Rowv = NA, 
+                        col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdYlGn"))(10)),
+                        main = "Covariation")
+dev.off()
+
+# plot correlation
+png("figures/paired_antagonistic_cor.png", width = 500, height = 500)
+cor(pops_w) %>% heatmap(Colv = NA, Rowv = NA, 
+                        col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdYlGn"))(10)), 
+                        main = "Correlation")
+dev.off()
