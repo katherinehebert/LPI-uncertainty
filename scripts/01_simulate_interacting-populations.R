@@ -15,45 +15,59 @@ set.seed(2)
 
 # parameters for simulation ----------------------------------------------------
 
-n_pairs = 25 # number of population pairs to generate
-gen = 10 # number of generations
-N0 = 100
-process = runif(n_pairs*gen, -N0/10, N0/10) # process error (environmental noise)
-observation = runif(n_pairs*gen, -0.1, 0.1) # observation error
+# number of population pairs to generate
+n_pairs = 10
 
-# current population sizes (t=0)
-N0_A = rep(N0, n_pairs)
-N0_B = rep(N0, n_pairs)
+# number of generations
+gen = 10 
+
+# initial population sizes
+N0i = 200
+N0j = 200
 
 # growth rate
-r = matrix(1, nrow = n_pairs, ncol = gen) 
-# add observation error to growth rates
-r_error = r + observation
+lambda_i = 0.5 # true growth rate
+lambda_j = 0.5 # true growth rate
+# matrix form
+r = matrix(lambda_i, nrow = n_pairs, ncol = gen) 
 
 # interaction coefficients (competition)
-alpha_AB = -0.0005
-alpha_BA = 0.0005
+alpha_ij = 0
+alpha_ji = 0
 
+# carrying capacity
+Ki = 190
+Kj = 190
+
+## ERROR ##
+
+process = runif(n_pairs*gen, -N0i/10, N0i/10) # process error (environmental noise)
+observation = runif(n_pairs*gen, -0.1, 0.1) # observation error
+
+# add observation error to growth rates
+r_error = r + observation
 # process error (environmental noise)
 proc_error = matrix(process, nrow = n_pairs, ncol = gen)
 
 # run simulation --------------------------------------------------------------- 
 
 # initialize matrix to store results (population sizes)
-popsA <- as.matrix(N0_A)
-popsB <- as.matrix(N0_B)
+Ni <- as.matrix(rep(N0i, n_pairs))
+Nj <- as.matrix(rep(N0j, n_pairs))
 
+# Nt+1_i = Nt_i + rNt_i * ((1 - Nt_i/K_i) + alpha_ji*Nt_j/K_j
 # calculate population sizes
-# current population size * (growth rate + observation error) + environmental noise
-for(t in 2:gen){
-  # set A
-  temp_A <- popsA[,t-1]*(r_error[,t] + alpha_BA*popsB[,t-1]) + proc_error[,t]
-  temp_A[which(temp_A < 0)] <- 0 # assign 0 to negative population sizes
-  popsA <- cbind(popsA, temp_A) # append resulting population size to results vector
-  # set B
-  temp_B <- popsB[,t-1]*(r_error[,t] + alpha_AB*popsA[,t-1]) + proc_error[,t]
-  temp_B[which(temp_B < 0)] <- 0 # assign 0 to negative population sizes
-  popsB <- cbind(popsB, temp_B) # append resulting population size to results vector
+for(t in 1:gen-1){
+  
+  # population i
+  temp_i = Ni[t]*(1 + r_error[,t]*(1 - (Ni[t] + alpha_ij*Nj[t])/Ki)) + proc_error[,t]
+  temp_i[which(temp_i < 0)] <- 0 # assign 0 to negative population sizes
+  Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
+  
+  # population j
+  temp_j = Nj[t]*(1 + r_error[,t]*(1 - (Nj[t] + alpha_ji*Ni[t])/Kj)) + proc_error[,t]
+  temp_j[which(temp_j < 0)] <- 0 # assign 0 to negative population sizes
+  Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
 }
 
 # plot results -----------------------------------------------------------------
@@ -67,37 +81,41 @@ pops_long <- function(pops_df, n = n_pairs, g = gen, set_id) {
   colnames(pops_df) = time
   pops_df = mutate(.data = pops_df, "popID" = paste(set_id, sprintf("pop%s", 1:n), sep = "-")) %>%
     pivot_longer(cols = 1:all_of(g), names_to = "time", values_to = "N") %>%
-    separate(popID, into = c("set", "pop"), sep = "-", remove = FALSE)
+    separate(popID, into = c("set", "pop"), sep = "-", remove = FALSE) %>%
+    mutate_at(vars(time), as.integer)
 }
 
 # bind together
-pops = rbind(pops_long(popsA, set_id = "A"), pops_long(popsB, set_id = "B"))
+N = rbind(pops_long(Ni, set_id = "i"), pops_long(Nj, set_id = "j"))
 
 # plot
-ggplot(pops) +
-  geom_line(aes(x = time, y = N, group = popID, col = pop)) + 
-  ylim(c(0, max(pops$N+10))) +
-  facet_wrap(~set) + theme(legend.position = "none")
+ggplot(N) +
+  geom_line(aes(x = time, y = N, group = popID, col = popID)) + 
+  #ylim(c(min(N$N - 10), max(N$N+10))) +
+  #geom_hline(yintercept = Ki, lty = 2) +
+  #geom_hline(yintercept = Kj, lty = 2) +
+  facet_wrap(~ set) + 
+  theme(legend.position = "none")
 
 # save outputs -----------------------------------------------------------------
-saveRDS(pops, "simulations/paired_antagonistic_l.RDS")
+saveRDS(N, "simulations/paired_antagonistic_l.RDS")
 ggsave(filename = "paired_antagonistic_N.png", path = "figures/", plot = last_plot(),
        width = 7, height = 5, units = "in")
 
 # calculate covariation --------------------------------------------------------
 
-pops_w = cbind(t(popsA), t(popsB))
+N_w = cbind(t(Ni), t(Nj))
 
 # plot covariation
 png("figures/paired_antagonistic_cov.png", width = 500, height = 500)
-cov(pops_w) %>% heatmap(Colv = NA, Rowv = NA, 
+cov(N_w) %>% heatmap(Colv = NA, Rowv = NA, 
                         col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdYlGn"))(10)),
                         main = "Covariation")
 dev.off()
 
 # plot correlation
 png("figures/paired_antagonistic_cor.png", width = 500, height = 500)
-cor(pops_w) %>% heatmap(Colv = NA, Rowv = NA, 
+cor(N_w) %>% heatmap(Colv = NA, Rowv = NA, 
                         col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdYlGn"))(10)), 
                         main = "Correlation")
 dev.off()
