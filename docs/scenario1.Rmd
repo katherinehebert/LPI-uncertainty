@@ -1,0 +1,228 @@
+---
+title: "Scenario 1: Constant growth rate"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# libraries
+library(kableExtra)
+require(tidyverse)
+
+# chunk params
+knitr::opts_chunk$set(echo = FALSE)
+
+# set ggplot theme
+theme_set(theme_linedraw() + theme(panel.grid = element_blank()) + theme(legend.position = "none"))
+
+# set seed for randomization
+set.seed(2)
+```
+
+```{r setup-functions}
+# function to repeat vector as rows of a matrix
+rep.row <- function(x,n){matrix(rep(x, each = n), nrow = n)}
+
+# function to wrangle simulation results into long format 
+pops_long <- function(pops_df, n = n_pairs, g = steps, set_id) {
+  pops_df = as.data.frame(pops_df)
+  colnames(pops_df) = as.character(1:steps)
+  pops_df = mutate(.data = pops_df, "popID" = paste(set_id, sprintf("pop%s", 1:n), sep = "-")) %>%
+    pivot_longer(cols = 1:all_of(g), names_to = "time", values_to = "N") %>%
+    separate(popID, into = c("set", "pop"), sep = "-", remove = FALSE) %>%
+    mutate_at(vars(time), as.integer)
+}
+
+# function to simulate populations according to Lotka-Volterra competition model
+sim <- function(Ni_init = N0i, Nj_init = N0j, n_pairedpops = n_pairs, timesteps = steps, Ri = r_i_error, Rj = r_j_error, int_ij = alpha_ij, int_ji = alpha_ji, proc = proc_error, K){
+  
+  # initialize matrix to store results (population sizes)
+  Ni <- as.matrix(rep(Ni_init, n_pairedpops))
+  Nj <- as.matrix(rep(Nj_init, n_pairedpops))
+  
+  # Nt+1_i = Nt_i + rNt_i * ((1 - Nt_i/K_i) + alpha_ji*Nt_j/K_j
+  # calculate population sizes
+  for(t in 1:timesteps-1){
+    
+    # population i
+    temp_i = Ni[t]*(1 + Ri[,t]*(1 - (Ni[t] + int_ij*Nj[t])/K[t])) + proc[,t]
+    temp_i[which(temp_i < 0)] <- 0 # assign 0 to negative population sizes
+    Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
+    
+    # population j
+    temp_j = Nj[t]*(1 + Rj[,t]*(1 - (Nj[t] + int_ji*Ni[t])/K[t])) + proc[,t]
+    temp_j[which(temp_j < 0)] <- 0 # assign 0 to negative population sizes
+    Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
+  }
+
+  # wrangle!
+  time <- 1:timesteps   # create vector of time values for plotting
+  # bind together
+  N = rbind(pops_long(Ni, set_id = "i"), pops_long(Nj, set_id = "j"))
+
+return(N)
+}
+
+# plot simulated populations
+sim_plot <- function(df, K_slope, K_int, title){
+  ggplot(df) +
+  geom_line(aes(x = time, y = N, group = popID, col = popID)) + 
+  geom_abline(slope = K_slope, intercept = K_int, lty = 2, lwd = .6) + 
+  facet_wrap(~ set) + 
+  ylim(c(0, K_int*2)) +
+  ggtitle(title)
+}
+```
+
+
+## Mechanistic simulation
+
+Populations will be simulated using a mechanistic approach according to a discrete Lotka-Volterra competition model.
+
+In its simplest form, each population's size will vary according to:
+
+$$N_i(t+1) = N_i(t) + \lambda_i * N_i(t)$$
+where $N_i$ is the size of population $i$, $t$ is each time step, and $\lambda$ is the true growth rate of population $i$.
+
+The true growth rate is determined by:
+
+$$ \lambda_i = r*(1-\frac{(N_i(t) + \alpha_{ji}N_j(t))}{K_i})$$
+where:  
+$r$ is population $i$'s maximum growth rate  
+$\alpha_{ji}$ is the interaction effect of population $j$ on population $i$  
+$N_j$ is the size of population $j$  
+$K_i$ is the carrying capacity of population $i$  
+
+#### Scenarios of population change
+
+The largest threat to populations in the Living Planet Index is habitat degradation and loss. For this experiment, I will be changing the carrying capacity as a way to mimick habitat loss/degradation, in order to generate three possible populations trends:
+
+- growing ($\frac{(N_i(t) + \alpha_{ji}N_j(t))}{K_i} < 1$) 
+
+- stable  ($\frac{(N_i(t) + \alpha_{ji}N_j(t))}{K_i} = 1$)  
+
+- declining  ($\frac{(N_i(t) + \alpha_{ji}N_j(t))}{K_i} > 1$)  
+
+```{r illustrate-K-scenarios}
+# create palette
+pal <- c("#24a015", "#1524a0", "#a01524")
+
+# blank plot
+par(mar = c(5.1, 4.1, 2.5, 2))
+plot(1, type="n", xlab="time", main = "Population trend scenarios",
+     ylab="Carrying capacity (K)", xlim=c(0.35, 10), ylim=c(-1, 1), las = 1, yaxt='n')
+axis(side = 2, 0, labels = "", las = 1)
+abline(a = 0, b = 0.1, col = pal[1], lwd = 2) # growing
+abline(h = 0, col = pal[2], lwd = 2) # stable
+abline(a = 0, b = -0.1, col = pal[3], lwd = 2) # declining
+legend("topleft", legend = c("growing", "stable", "declining"), 
+       col = pal, lty = 1, lwd = 2, horiz = TRUE, inset = .03)
+text(x = 9.2, y = 0, pos = 3, labels = "N0 = K")
+```
+
+#### Source of covariation
+
+Populations will be generated as antagonistic interaction partners, meaning the growth of one population will negatively impact the growth of its paired population (and vice-versa). I'm making this choice because this type of covariation reflects competition (directly, as the Lotka-Volterra equation is for this), which is likely to be prevalent in the Living Planet Database.
+
+#### Sources of error
+
+Population time series are subject to both observation error (i.e. "noisy" measurements of population size), and process error (i.e. environmental noise, demographic stochasticity, and other "noise" introduced into the processes that govern population size).
+
+**[ fill later ]**
+
+## Scenario 1
+
+This first scenario is a "perfect world" scenario, where there are no random fluctuations in growth rate from population dynamics or environmental stochasticity (process errors), observation errors, or changing biotic conditions (interactions do not influence the populations).
+
+The purpose is to see how the LPI detects declines, stability, and growth in population size, to detect any inherent bias in its estimation of the true population growth rate (i.e. $\lambda$), without any introduced error.
+
+```{r plot-scenario, eval = FALSE}
+# create palette
+pal <- c("#24a015", "#1524a0", "#a01524")
+
+# growth rate
+plot(1, type="n", xlab="time", main = "Scenario 1: Constant growth rate",
+     ylab=expression(lambda), xlim=c(0, 10), ylim=c(-1, 1), las = 1)
+abline(h = 0.5, col = pal[1], lwd = 2)
+abline(h = 0, col = pal[2], lwd = 2)
+abline(h = -0.5, col = pal[3], lwd = 2)
+legend("top", legend = c("growing", "stable", "declining"), 
+       col = pal, lty = 1, lwd = 2, horiz = TRUE, inset = .03)
+```
+
+The parameters used to simulate population fluctuations using the equations above will be:
+
+```{r set-parameters}
+## BASIC SET-UP ##
+
+# number of population pairs to generate
+n_pairs = 10
+
+# number of generations
+steps = 10 
+
+## POPULATION DYNAMICS ##
+
+# initial population sizes
+N0i = 200
+N0j = 200
+
+# growth rate
+r_i = matrix(1, nrow = n_pairs, ncol = steps)
+r_j = matrix(1, nrow = n_pairs, ncol = steps)
+
+# interaction coefficients (competition)
+alpha_ij = 0.1
+alpha_ji = 0.1
+
+## CARRYING CAPACITY SCENARIOS ##
+K_increase = 200 + 10*c(0:(steps-1))
+K_stable = rep(200, steps)
+K_decline = 200 - 10*c(0:(steps-1))
+
+## ERROR ##
+
+process = runif(n_pairs*steps, -N0i/10, N0i/10) # process error (environmental noise)
+#observation = runif(n_pairs*steps, -0.1, 0.1) # observation error
+observation = rep(0, n_pairs*steps)
+
+# add observation error to growth rates
+r_i_error = r_i + observation
+r_j_error = r_j + observation
+
+# process error (environmental noise)
+proc_error = matrix(process, nrow = n_pairs, ncol = steps)
+```
+
+```{r params-table}
+params <- data.frame("i" = c(N0i, r_i[1,1], alpha_ji, 
+                             unique(observation), 
+                             paste0("+/-", N0i/10)), 
+                     "j" = c(N0j, r_j[1,1], alpha_ji, 
+                             unique(observation), 
+                             paste0("+/-", N0j/10)),
+                     row.names = c("Initial size ($N0$)",
+                                   "Maximum growth rate ($r$)",
+                                   "Interaction effect ($\\alpha$)",
+                                   "Observation error",
+                                   "Process error"))
+kbl(params, booktabs = TRUE, caption = "Simulation parameters") %>%
+  kable_styling(position = "center", latex_options = "hold_position")
+```
+
+## Simulation
+
+```{r run-simulation}
+N_stable <- sim(K = K_stable)
+N_increase <- sim(K = K_increase)
+N_decline <- sim(K = K_decline)
+```
+
+
+```{r plot-simulations, fig.show="hold", fig.height = 3}
+sim_plot(df = N_decline, K_slope = -10, K_int = 200, 
+         title = "Scenario A: Declining habitat, declining competitors")
+sim_plot(df = N_stable, K_slope = 0, K_int = 200, 
+         title = "Scenario B: Stable habitat, stable competitors")
+sim_plot(df = N_increase, K_slope = 10, K_int = 200, 
+         title = "Scenario C: Growing habitat, growing competitors")
+```
