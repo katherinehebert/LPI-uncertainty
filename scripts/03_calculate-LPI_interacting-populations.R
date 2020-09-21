@@ -79,15 +79,15 @@ dt_ls[[1]] <- NULL
 
 # take geometric mean growth rate per time step (with error propagation)
 dt_gm_err <- data.frame("time" = 1, "gm" = 1, "err" = 0)
-for(i in 1:length(dt_ls)){
+for(i in 2:length(dt_ls)){
   # extract growth rates and assign error
   dt_err = dt_ls[[i]]$dt
   errors(dt_err) = dt_ls[[i]]$se 
   # calculate geometric mean
   gm <- gm_mean(dt_err) %>% log10()
   # wrangle into a vector (mean, error)
-  dt_gm_err[i+1, "gm"] = drop_errors(gm)
-  dt_gm_err[i+1, "err"] = errors(gm)
+  dt_gm_err[i, "gm"] = drop_errors(gm)
+  dt_gm_err[i, "err"] = errors(gm)
   }  
 dt_gm_err$time <- 1:nrow(dt_gm_err)
 
@@ -111,15 +111,15 @@ ggplot(lpi, aes(x = time)) +
   geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot), alpha = .2, fill = "blue") +
   geom_line(aes(y = LPI_boot)) +
   # propagation version
-  geom_ribbon(aes(ymin = cilo_se, ymax = cihi_se), alpha = .4, fill = "#e7298a") +
+  geom_ribbon(aes(ymin = cilo_se, ymax = cihi_se), alpha = .2, fill = "#e7298a") +
   geom_line(aes(y = LPI_se)) +
   # expected 
   geom_hline(aes(yintercept = 1), lty = 2) +
   # annotations
-  annotate("text", x = 9, y = max(lpi$cihi_boot)-0.05, label = "Bootstrap", 
-           colour = "darkblue", fontface = "italic") +
-  annotate("text", x = 9, y = min(lpi$cilo_se)-0.02, label = "Propagation", 
-           colour = "#980043", fontface = "italic") +
+  # annotate("text", x = 9, y = max(lpi$cihi_boot)-0.05, label = "Bootstrap", 
+  #          colour = "darkblue", fontface = "italic") +
+  # annotate("text", x = 9, y = min(lpi$cilo_se)-0.02, label = "Propagation", 
+  #          colour = "#980043", fontface = "italic") +
   ylim(c(0.5,1.5)) + labs(y = "Living Planet Index")
 
 # save outputs -----------------------------------------------------------------
