@@ -5,8 +5,10 @@ output: html_document
 
 ```{r setup, include=FALSE}
 # libraries
-library(kableExtra)
+require(kableExtra)
 require(tidyverse)
+require(mgcv)
+require(errors)
 
 # chunk params
 knitr::opts_chunk$set(echo = FALSE)
@@ -19,8 +21,12 @@ set.seed(2)
 ```
 
 ```{r setup-functions}
+## GENERAL USE FUNCTIONS ## ----------------------------------------------------
+
 # function to repeat vector as rows of a matrix
 rep.row <- function(x,n){matrix(rep(x, each = n), nrow = n)}
+
+## SIMULATION FUNCTIONS ## -----------------------------------------------------
 
 # function to wrangle simulation results into long format 
 pops_long <- function(pops_df, n = n_pairs, g = steps, set_id) {
@@ -41,7 +47,7 @@ sim <- function(Ni_init = N0i, Nj_init = N0j, n_pairedpops = n_pairs, timesteps 
   
   # Nt+1_i = Nt_i + rNt_i * ((1 - Nt_i/K_i) + alpha_ji*Nt_j/K_j
   # calculate population sizes
-  for(t in 1:timesteps-1){
+  for(t in 2:timesteps-1){
     
     # population i
     temp_i = Ni[t]*(1 + Ri[,t]*(1 - (Ni[t] + int_ij*Nj[t])/K[t])) + proc[,t]
@@ -70,6 +76,153 @@ sim_plot <- function(df, K_slope, K_int, title){
   facet_wrap(~ set) + 
   ylim(c(0, K_int*2)) +
   ggtitle(title)
+}
+
+# calculate and plot covariation and correlation heatmaps
+covcor_pops <- function(df_long){
+  # convert to wide
+  temp_w <- subset(df_long, select = -c(set, pop)) %>%
+    pivot_wider(names_from = popID, values_from = N, id_cols = time) %>%
+    subset(select = -time)
+  # calculate and plot covariance
+  p1 <- heatmap(cov(temp_w), Colv = NA, Rowv = NA, 
+                col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdYlGn"))(10)),
+                main = "Covariation")
+  # calculate and plot correlation
+  p2 <- heatmap(cor(temp_w), Colv = NA, Rowv = NA, 
+                 col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdYlGn"))(10)),
+                 main = "Correlation")
+  return(list(p1, p2))
+}
+
+
+## LPI FUNCTIONS ## ------------------------------------------------------------
+
+calclpi_exp <- function(Ni_init = N0i, Nj_init = N0j, n_pairedpops = 1, timesteps = steps, Ri = r_i, Rj = r_j, int_ij = alpha_ij, int_ji = alpha_ji, K){
+  
+  # initialize vector to store results (population sizes)
+  Ni <- Ni_init
+  Nj <- Nj_init
+  
+  # Nt+1_i = Nt_i + rNt_i * ((1 - Nt_i/K_i) + alpha_ji*Nt_j/K_j
+  # calculate population sizes
+  for(t in 1:timesteps-1){
+    
+    # population i
+    temp_i = Ni[t]*(1 + Ri[,t]*(1 - (Ni[t] + int_ij*Nj[t])/K[t]))
+    temp_i[which(temp_i < 0)] <- 0 # assign 0 to negative population sizes
+    Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
+    
+    # population j
+    temp_j = Nj[t]*(1 + Rj[,t]*(1 - (Nj[t] + int_ji*Ni[t])/K[t]))
+    temp_j[which(temp_j < 0)] <- 0 # assign 0 to negative population sizes
+    Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
+  }
+
+  # calculate lambda
+  lambda_i = Ri[,1]*(1-((Ni + (int_ij*Nj))/K))
+  lambda_j = Rj[,1]*(1-((Nj + (int_ji*Ni))/K))
+  lambda_df = cbind(lambda_i, lambda_j)
+  # take geometric mean
+  lambda_gm <- apply(lambda_df, 1, gm_mean)
+  
+  # calculate LPI
+  lpi_exp <- data.frame(time = 1:steps, LPI = calclpi(log10(lambda_gm)))
+  
+  return(list("dt" = lambda_df, "lpi" = lpi_exp))
+}
+
+
+# function to run GAM on population time series + predict over all time steps
+gam_lpi <- function(pops){
+  
+  # estimate the smoothing parameter to be half the time series length
+  smoothParm = round(length(unique(pops$time))/2)
+  
+  # transform population sizes
+  pops$N <- log10(pops$N + 1)
+  # wrangle into wide format
+  pops_w = pivot_wider(data = pops, id_cols = time, names_from = popID, values_from = N) %>%
+    mutate_at(vars(time), as.integer) %>% as.matrix()
+  
+  # run GAM (modified code from CalcLPI function in rlpi package)
+  m <- list()
+  for(i in 2:ncol(pops_w)){
+    N <- as.vector(pops_w[,i])
+    time <- as.vector(pops_w[,"time"])
+    m[[i-1]] <- gam(N ~ s(time, k = smoothParm), 
+                    family = gaussian(), fx = TRUE, method = "REML")
+  }
+  names(m) <- unique(pops$popID)
+  
+  # predict over time period
+  pred_ls = lapply(m, predict.gam, type = "response", se.fit = TRUE)
+  
+  # wrangle into one long format dataframe
+  pred = pred_ls %>%
+    lapply(bind_cols) %>%
+    lapply(mutate, time = pops_w[,"time"]) %>%
+    bind_rows(.id = "popID")
+  # join to observation dataframe
+  pred = full_join(pops, pred, by = c("popID", "time"))
+  
+  return(pred)
+}
+
+
+# function to calculate dt from GAM predictions
+get_dt <- function(gam.pred_ls, time){
+  # gam.pred_ls: list of predictions from GAMs (one per population)
+
+  # extract predicted population size values
+  N = gam.pred_ls$fit 
+  # assign errors to values for propagation
+  errors(N) = gam.pred_ls$se.fit
+  # un-log10
+  N = 10^N # un-log
+  
+  # initialize df to store dts
+  dt_df = data.frame(time = time, dt = NA, se = NA)
+  for(i in 2:length(N)){
+    # calculate dt
+    dt = log10(N[i]/N[i-1])
+    dt_df[i, "dt"] = dt # save in the table
+    # save propagated error 
+    dt_df[i, "se"] = unlist(errors(dt))
+  }
+  return("dt" = dt_df)
+}
+
+# geometric mean function
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
+
+# function to calculate geometric mean that will be used in bootstrapping
+geoMean_boot <- function(dt, i){
+  d <- dt[i] # indexing happens here
+  avg <- gm_mean(d, na.rm = TRUE)
+  return(avg)
+}
+
+# function for bootstrap confidence interval 
+dt_boot = function(dt){
+  # bootstrap resampling
+  dt_r = boot::boot(dt, statistic = geoMean_boot, R = 1000)
+  # calculate 95% confidence intervals
+  dt_ci = boot::boot.ci(dt_r, type = "basic", R = 1000)
+  # wrangle into table for output
+  dtboot_df = data.frame(gm = dt_ci$t0, cilo = dt_ci$basic[4], cihi = dt_ci$basic[5])
+  return(dtboot_df)
+}
+
+# function to calculate LPI from mean dt
+calclpi <- function(dt){
+  # calculate index value
+  lpi = c(1) # initial value is 1 
+  for(i in 2:length(dt)){
+    lpi[i] <- lpi[i-1]*10^dt[i] }
+  return(lpi)
 }
 ```
 
@@ -181,24 +334,23 @@ K_decline = 200 - 10*c(0:(steps-1))
 
 ## ERROR ##
 
-process = runif(n_pairs*steps, -N0i/10, N0i/10) # process error (environmental noise)
-#observation = runif(n_pairs*steps, -0.1, 0.1) # observation error
-observation = rep(0, n_pairs*steps)
+# generate error
+# process error (environmental noise)
+proc_error = matrix(runif(n_pairs*steps, -N0i/10, N0i/10), nrow = n_pairs, ncol = steps)
+# observation error
+observation = matrix(runif(n_pairs*steps, -0.1, 0.1), nrow = n_pairs, ncol = steps) 
 
 # add observation error to growth rates
 r_i_error = r_i + observation
 r_j_error = r_j + observation
-
-# process error (environmental noise)
-proc_error = matrix(process, nrow = n_pairs, ncol = steps)
 ```
 
 ```{r params-table}
 params <- data.frame("i" = c(N0i, r_i[1,1], alpha_ji, 
-                             unique(observation), 
+                             paste0("+/-", 0.1), 
                              paste0("+/-", N0i/10)), 
                      "j" = c(N0j, r_j[1,1], alpha_ji, 
-                             unique(observation), 
+                             paste0("+/-", 0.1), 
                              paste0("+/-", N0j/10)),
                      row.names = c("Initial size ($N0$)",
                                    "Maximum growth rate ($r$)",
@@ -211,12 +363,16 @@ kbl(params, booktabs = TRUE, caption = "Simulation parameters") %>%
 
 ## Simulation
 
+### The simulated populations
+
 ```{r run-simulation}
 N_stable <- sim(K = K_stable)
 N_increase <- sim(K = K_increase)
 N_decline <- sim(K = K_decline)
-```
 
+# save outputs!
+saveRDS(list("N_increase" = N_increase,"N_stable" = N_stable,"N_decline" = N_decline),"~/Documents/GitHub/LPI-sensitivity/simulations/scenario1.RDS")
+```
 
 ```{r plot-simulations, fig.show="hold", fig.height = 3}
 sim_plot(df = N_decline, K_slope = -10, K_int = 200, 
@@ -226,3 +382,164 @@ sim_plot(df = N_stable, K_slope = 0, K_int = 200,
 sim_plot(df = N_increase, K_slope = 10, K_int = 200, 
          title = "Scenario C: Growing habitat, growing competitors")
 ```
+
+### Covariance & correlation structures
+
+#### Scenario A: Declining habitat, declining competitors
+```{r covariance-correlation-heatmaps-sce1, fig.show="hold", out.width='50%'}
+invisible(covcor_pops(N_decline))
+```
+
+#### Scenario B: Stable habitat, stable competitors
+```{r covariance-correlation-heatmaps-sce2, fig.show="hold",  out.width='50%'}
+invisible(covcor_pops(N_stable))
+```
+
+#### Scenario C: Growing habitat, growing competitors
+```{r covariance-correlation-heatmaps-sce3, fig.show="hold",  out.width='50%'}
+invisible(covcor_pops(N_increase))
+```
+
+
+## Living Planet Index
+
+#### Expected LPI
+
+```{r simulate-populations-without-error, eval = FALSE}
+# calculate expected growth rate
+lpi_exp_decline = calclpi_exp(K = K_decline)
+lpi_exp_stable = calclpi_exp(K = K_stable)
+lpi_exp_increase = calclpi_exp(K = K_increase)
+
+ggplot(lpi_exp_stable$lpi) +
+  geom_line(aes(x = time, y = LPI))
+
+```
+
+
+#### Observed LPI
+
+```{r gam}
+# run GAM on each population time series and predict over all time steps
+# (while storing the standard error from the GAM fit)
+pred_decline <- gam_lpi(N_decline)
+pred_stable <- gam_lpi(N_stable)
+pred_increase <- gam_lpi(N_increase)
+```
+
+```{r calculate-dt}
+# split datasets into list of populations
+pred_decline_ls <- split(pred_decline, f = pred_decline$popID)
+pred_stable_ls <- split(pred_stable, f = pred_stable$popID)
+pred_increase_ls <- split(pred_increase, f = pred_increase$popID)
+
+# calculate dt from GAM predictions
+dt_decline <- lapply(pred_decline_ls, get_dt, time = 1:steps) %>% 
+  bind_rows(.id = "popID") %>% mutate(scenario = "Scenario A: Decline")
+dt_stable <- lapply(pred_stable_ls, get_dt, time = 1:steps) %>% 
+  bind_rows(.id = "popID") %>% mutate(scenario = "Scenario B: Stable")
+dt_increase <- lapply(pred_increase_ls, get_dt, time = 1:steps) %>% 
+  bind_rows(.id = "popID") %>% mutate(scenario = "Scenario C: Increase")
+
+# join to observations dataframe
+dt_decline_df = full_join(N_decline, dt_decline, by = c("popID", "time"))
+dt_stable_df = full_join(N_stable, dt_stable, by = c("popID", "time"))
+dt_increase_df = full_join(N_increase, dt_increase, by = c("popID", "time"))
+```
+
+```{r plot-dt}
+# calculate expected dt ###############################################
+
+
+# bind together into one df
+dt_df <- rbind(dt_decline_df, dt_stable_df, dt_increase_df) 
+dt_df$scenario = factor(dt_df$scenario, levels = c("Scenario A: Decline", "Scenario B: Stable", "Scenario C: Increase"))
+
+# plot dts
+ggplot(data = na.omit(dt_df), aes(x = time, group = popID)) +
+  geom_ribbon(aes(ymin = dt-se, ymax = dt+se, fill = pop), alpha = .2) +
+  geom_line(aes(y=dt), lwd = .2) + 
+  facet_wrap(~scenario) + 
+  labs(y = "Growth rate (log10)", title = "Population growth rates",
+       col = "Paired \npopulations", fill = "Paired \npopulations",
+       caption = "Ribbon shows propagated standard error from GAM predictions.")
+```
+
+```{r calculate-mean-growthrate}
+# calculate geometric mean growth rate with 95% CI from bootstrapping
+
+# decline
+dt_gm_decline <- list(data.frame(gm = 1, cilo = 1, cihi = 1))
+for(t in 2:length(unique(dt_decline_df$time))){
+  dt_v = dt_decline_df[which(dt_decline_df$time == t), "dt"] %>% na.omit()
+  dt_gm_decline[[t]] = dt_boot(10^dt_v$dt) 
+}
+dt_gm_decline = bind_rows(dt_gm_decline) %>% log10()
+
+# stable
+dt_gm_stable <- list(data.frame(gm = 1, cilo = 1, cihi = 1))
+for(t in 2:length(unique(dt_stable_df$time))){
+  dt_v = dt_stable_df[which(dt_stable_df$time == t), "dt"] %>% na.omit()
+  dt_gm_stable[[t]] = dt_boot(10^dt_v$dt) 
+}
+dt_gm_stable = bind_rows(dt_gm_stable) %>% log10()
+
+# increase
+dt_gm_increase <- list(data.frame(gm = 1, cilo = 1, cihi = 1))
+for(t in 2:length(unique(dt_increase_df$time))){
+  dt_v = dt_increase_df[which(dt_increase_df$time == t), "dt"] %>% na.omit()
+  dt_gm_increase[[t]] = dt_boot(10^dt_v$dt) 
+}
+dt_gm_increase = bind_rows(dt_gm_increase) %>% log10()
+```
+
+```{r calculate-lpi}
+# calculate LPI with bootstrapped 95%CI
+
+# decline
+lpi_decline <- data.frame(
+    time = 1:nrow(dt_gm_decline), 
+    LPI_boot = calclpi(dt_gm_decline$gm),
+    cilo_boot = calclpi(dt_gm_decline$cilo),
+    cihi_boot = calclpi(dt_gm_decline$cihi)
+  )
+
+# stable
+lpi_stable <- data.frame(
+    time = 1:nrow(dt_gm_stable), 
+    LPI_boot = calclpi(dt_gm_stable$gm),
+    cilo_boot = calclpi(dt_gm_stable$cilo),
+    cihi_boot = calclpi(dt_gm_stable$cihi)
+  )
+
+# increase
+lpi_increase <- data.frame(
+    time = 1:nrow(dt_gm_increase), 
+    LPI_boot = calclpi(dt_gm_increase$gm),
+    cilo_boot = calclpi(dt_gm_increase$cilo),
+    cihi_boot = calclpi(dt_gm_increase$cihi)
+  )
+
+# bind together
+lpi <- rbind(
+  mutate(lpi_decline, scenario = "Scenario A: Decline"),
+  mutate(lpi_stable, scenario = "Scenario B: Stable"),
+  mutate(lpi_increase, scenario = "Scenario C: Increase")
+)
+lpi$scenario = factor(lpi$scenario, 
+                      levels = c("Scenario A: Decline", 
+                                 "Scenario B: Stable", "Scenario C: Increase"))
+```
+
+```{r plot-lpi}
+# Plot LPI with bootstrapped 95%CI  ------------
+ggplot(lpi, aes(x = time)) +
+  # bootstrap version
+  geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, fill = scenario), alpha = .5) +
+  geom_line(aes(y = LPI_boot)) +
+  facet_wrap(~scenario) +
+  # expected 
+  #geom_hline(aes(yintercept = 1), lty = 2) +
+  labs(y = "Living Planet Index")
+```
+
