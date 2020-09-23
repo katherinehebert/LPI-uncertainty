@@ -388,7 +388,7 @@ N_increase <- sim(K = K_increase)
 N_decline <- sim(K = K_decline)
 
 # save outputs!
-saveRDS(list("N_increase" = N_increase,"N_stable" = N_stable,"N_decline" = N_decline),"~/Documents/GitHub/LPI-sensitivity/simulations/scenario1.RDS")
+saveRDS(list("N_increase" = N_increase,"N_stable" = N_stable,"N_decline" = N_decline),"~/Documents/GitHub/LPI-sensitivity/simulations/scenario2.RDS")
 ```
 
 ```{r plot-simulations, fig.show="hold", fig.height = 3}
@@ -593,10 +593,10 @@ ggplot(sensitivity_means, aes(x = scenario)) +
   geom_point(aes(y = mean_accuracy), size = 2.5) +
   geom_hline(yintercept = 0, lty = 2) +
   labs(x = "", y = "Accuracy of the LPI") +
-  ylim(.5,-.5)
+  ylim(-.5,.5)
 ```
 
 ```{r save-result}
-saveRDS(lpi, "~/Documents/GitHub/LPI-sensitivity/outputs/scenario1_lpi.RDS")
+saveRDS(lpi, "~/Documents/GitHub/LPI-sensitivity/outputs/scenario2_lpi.RDS")
 ```
 
