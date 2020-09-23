@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = FALSE)
 theme_set(theme_linedraw() + theme(panel.grid = element_blank()) + theme(legend.position = "none"))
 
 # set seed for randomization
-set.seed(2)
+set.seed(12)
 ```
 
 ```{r setup-functions}
@@ -106,30 +106,33 @@ calclpi_exp <- function(Ni_init = N0i, Nj_init = N0j, n_pairedpops = 1, timestep
   
   # Nt+1_i = Nt_i + rNt_i * ((1 - Nt_i/K_i) + alpha_ji*Nt_j/K_j
   # calculate population sizes
-  for(t in 1:timesteps-1){
+  for(t in 2:timesteps){
     
     # population i
-    temp_i = Ni[t]*(1 + Ri[,t]*(1 - (Ni[t] + int_ij*Nj[t])/K[t]))
+    temp_i = Ni[t-1]*(1 + Ri[1,t]*(1 - (Ni[t-1] + int_ij*Nj[t-1])/K[t]))
     temp_i[which(temp_i < 0)] <- 0 # assign 0 to negative population sizes
     Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
     
     # population j
-    temp_j = Nj[t]*(1 + Rj[,t]*(1 - (Nj[t] + int_ji*Ni[t])/K[t]))
+    temp_j = Nj[t-1]*(1 + Rj[1,t]*(1 - (Nj[t-1] + int_ji*Ni[t-1])/K[t]))
     temp_j[which(temp_j < 0)] <- 0 # assign 0 to negative population sizes
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
   }
 
-  # calculate lambda
-  lambda_i = Ri[,1]*(1-((Ni + (int_ij*Nj))/K))
-  lambda_j = Rj[,1]*(1-((Nj + (int_ji*Ni))/K))
-  lambda_df = cbind(lambda_i, lambda_j)
+   # initialize df to store dts
+  lambda_df = data.frame(dt_i = 0, dt_j = 0)
+  for(i in 2:steps){
+    # calculate dt
+    lambda_df[i, "dt_i"] = log10(Ni[i]/Ni[i-1])
+    lambda_df[i, "dt_j"] = log10(Nj[i]/Nj[i-1])
+  }
   # take geometric mean
-  lambda_gm <- apply(lambda_df, 1, gm_mean)
+  lambda_gm <- apply(10^(lambda_df), 1, gm_mean)
   
   # calculate LPI
   lpi_exp <- data.frame(time = 1:steps, LPI = calclpi(log10(lambda_gm)))
   
-  return(list("dt" = lambda_df, "lpi" = lpi_exp))
+  return(list("Ni" = Ni, "Nj" = Nj, "dt" = lambda_df, "dt_mean" = lambda_gm, "lpi" = lpi_exp))
 }
 
 
@@ -405,15 +408,27 @@ invisible(covcor_pops(N_increase))
 
 #### Expected LPI
 
-```{r simulate-populations-without-error, eval = FALSE}
-# calculate expected growth rate
+The true value of the LPI was calculated by generating populations with the same parameters outlined about, but without process and observation error. Instead of passing these populations through a GAM to generate predicted values on which the growth rate is calculated as in the LPI, growth rates are directly calculated from the population size changes between time steps. 
+
+The "observed" LPI will be compared against this true value later in the document to measure the accuracy and precision of the LPI in detecting these trends.
+
+```{r expected-values}
+# calculate expected values for each step of the way!
 lpi_exp_decline = calclpi_exp(K = K_decline)
 lpi_exp_stable = calclpi_exp(K = K_stable)
 lpi_exp_increase = calclpi_exp(K = K_increase)
+# bind results into one
+lpi_exp <- rbind(
+  mutate(lpi_exp_decline$lpi, scenario = "Scenario A: Decline"),
+  mutate(lpi_exp_stable$lpi, scenario = "Scenario B: Stable"),
+  mutate(lpi_exp_increase$lpi, scenario = "Scenario C: Increase")
+)
+lpi_exp$scenario = factor(lpi_exp$scenario, levels = c("Scenario A: Decline", "Scenario B: Stable", "Scenario C: Increase"))
 
-ggplot(lpi_exp_stable$lpi) +
-  geom_line(aes(x = time, y = LPI))
-
+# plot!
+ggplot(lpi_exp) +
+  geom_line(aes(x = time, y = LPI, col = scenario)) +
+  ylim(0,2) + labs(col = "") + theme(legend.position = "right")
 ```
 
 
@@ -445,17 +460,13 @@ dt_increase <- lapply(pred_increase_ls, get_dt, time = 1:steps) %>%
 dt_decline_df = full_join(N_decline, dt_decline, by = c("popID", "time"))
 dt_stable_df = full_join(N_stable, dt_stable, by = c("popID", "time"))
 dt_increase_df = full_join(N_increase, dt_increase, by = c("popID", "time"))
-```
-
-```{r plot-dt}
-# calculate expected dt ###############################################
-
-
 # bind together into one df
 dt_df <- rbind(dt_decline_df, dt_stable_df, dt_increase_df) 
 dt_df$scenario = factor(dt_df$scenario, levels = c("Scenario A: Decline", "Scenario B: Stable", "Scenario C: Increase"))
 
-# plot dts
+```
+
+```{r plot-dt, eval=FALSE}
 ggplot(data = na.omit(dt_df), aes(x = time, group = popID)) +
   geom_ribbon(aes(ymin = dt-se, ymax = dt+se, fill = pop), alpha = .2) +
   geom_line(aes(y=dt), lwd = .2) + 
@@ -537,9 +548,35 @@ ggplot(lpi, aes(x = time)) +
   # bootstrap version
   geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, fill = scenario), alpha = .5) +
   geom_line(aes(y = LPI_boot)) +
+  geom_line(data = lpi_exp, aes(x = time, y = LPI), lty = 2) +
   facet_wrap(~scenario) +
-  # expected 
-  #geom_hline(aes(yintercept = 1), lty = 2) +
   labs(y = "Living Planet Index")
+```
+
+#### LPI Sensitivity
+
+```{r calculate-accuracy-precision}
+lpi$accuracy = lpi$LPI_boot - lpi_exp$LPI
+lpi$precision = lpi$cihi_boot - lpi$cilo_boot
+
+# get mean per scenario
+sensitivity_means <- lpi %>% filter(time > 1) %>% # ignore first time step, because it's set to 1.
+  group_by(scenario) %>%
+  summarise(mean_accuracy = mean(accuracy),
+            sd_accuracy = sd(accuracy))
+```
+
+```{r plot-sensitivity}
+ggplot(sensitivity_means, aes(x = scenario)) +
+  geom_errorbar(aes(ymin = mean_accuracy - sd_accuracy,
+                    ymax = mean_accuracy + sd_accuracy), width = .1) +
+  geom_point(aes(y = mean_accuracy), size = 2.5) +
+  geom_hline(yintercept = 0, lty = 2) +
+  labs(x = "", y = "Accuracy of the LPI") +
+  ylim(.5,-.5)
+```
+
+```{r save-result}
+saveRDS(lpi, "~/Documents/GitHub/LPI-sensitivity/outputs/scenario1_lpi.RDS")
 ```
 
