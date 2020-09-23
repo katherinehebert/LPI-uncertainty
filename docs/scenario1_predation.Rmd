@@ -573,7 +573,7 @@ ggplot(sensitivity_means, aes(x = scenario)) +
   geom_point(aes(y = mean_accuracy), size = 2.5) +
   geom_hline(yintercept = 0, lty = 2) +
   labs(x = "", y = "Accuracy of the LPI") +
-  ylim(.5,-.5)
+  ylim(-.5,.5)
 ```
 
 ```{r save-result}
