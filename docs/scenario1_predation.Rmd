@@ -185,17 +185,23 @@ sim_plot(df = N_increase, K_slope = 10, K_int = 200,
 
 #### Scenario A: Declining habitat, declining competitors
 ```{r covariance-correlation-heatmaps-sce1, fig.show="hold", out.width='50%'}
-invisible(covcor_pops(N_decline))
+temp <- invisible(covcor_pops(N_decline))
+temp[[1]]
+temp[[2]]
 ```
 
 #### Scenario B: Stable habitat, stable competitors
 ```{r covariance-correlation-heatmaps-sce2, fig.show="hold",  out.width='50%'}
-invisible(covcor_pops(N_stable))
+temp <- invisible(covcor_pops(N_stable))
+temp[[1]]
+temp[[2]]
 ```
 
 #### Scenario C: Growing habitat, growing competitors
 ```{r covariance-correlation-heatmaps-sce3, fig.show="hold",  out.width='50%'}
-invisible(covcor_pops(N_increase))
+temp <- invisible(covcor_pops(N_increase))
+temp[[1]]
+temp[[2]]
 ```
 
 
