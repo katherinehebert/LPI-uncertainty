@@ -48,3 +48,4 @@ po/*~
 # draft scripts that aren't needed anymore
 scripts/drafts/
 data_raw/LPR2020data_public.csv
+.DS_Store
