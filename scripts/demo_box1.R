@@ -6,14 +6,19 @@ library(hrbrthemes)
 library(patchwork)
 library(synchrony)
 library(errors)
+library(mgcv)
+library(gratia)
 
 # load required functions
 source('scripts/scenario_functions.R')
 
+# set ggplot theme
+theme_set(theme_ipsum_rc())
+
 # 1. explore data to find a good example ----
 
 # read LPD dataset
-#lpd <- read_csv("data_raw/LPR2020data_public.csv")
+lpd <- read_csv("data_raw/LPR2020data_public.csv")
 
 # subset to example system
 ex_sub <- lpd %>% 
@@ -44,24 +49,6 @@ p_ts <- ggplot(ex) +
        #subtitle = "Coyote, Snowshoe hare, and Canadian lynx"
        )
 
-
-# calculate synchrony ----
-
-trio_sync <- community.sync(na.omit(ex_wide), nrands = 100)
-plot(trio_sync)
-
-ex_sync <- as.data.frame(ex_wide)
-ex_sync$year <- rownames(ex_wide)
-ex_sync <- relocate(.data = ex_sync, year) %>% 
-  mutate_at(vars(year), as.integer) %>%
-  as.matrix() %>% na.omit()
-
-sync_canlep <- phase.sync(t1 = ex_sync[,c(1,2)], 
-                          t2 = ex_sync[,c(1,3)],
-                          nrands = 100)
-plot(sync_canlep$deltaphase$phasediff ~ sync_canlep$deltaphase$timestep, pch = 16)
-# redo this ^^ but with growth rates....
-
 # get step-wise growth rates ----
 
 # function to calculate population growth rate (dt) using the chain method
@@ -73,6 +60,13 @@ calc_dt_chain <- function(N){
   }
   return(dt)
 }
+
+# reorganise data for the function
+ex_sync <- as.data.frame(ex_wide)
+ex_sync$year <- rownames(ex_wide)
+ex_sync <- relocate(.data = ex_sync, year) %>%
+  mutate_at(vars(year), as.integer) %>%
+  as.matrix() %>% na.omit()
 
 # calculate growth rate
 dt <- ex_sync
@@ -94,6 +88,7 @@ p_dt <- ggplot(ex_dt) +
 
 (p_ts / p_dt)
 
+
 # calculate linear covariance between populations ----
 
 cov_ex_dt <- dt[,2:4] %>% cov() %>% cov2cor()
@@ -107,7 +102,7 @@ trio_sync <- community.sync(dt[,2:4], nrands = 100)
 plot(trio_sync)
 
 
-#### mean growth rate per time step - no cov
+#### mean growth rate per time step (not treating populations as covarying)
 
 mean_dt <- data.frame(
   year = dt[,1],
@@ -121,42 +116,91 @@ p_mean <- ggplot(mean_dt) +
                   ymin = dt - 1.96*sd,
                   ymax = dt + 1.96*sd)) +
   geom_line(aes(x = year, y = dt), color = "white", lwd = 1.1) +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2, col = "white") +
   #scale_y_log10() +  
   theme_ipsum_rc() +
-  labs(y = "Growth rate (log10)",
-       title = "Mean growth rate (without covariance)")
+  labs(y = "Growth rate (log10)")
 p_mean
 
 
-#### GAM ----
+# simple linear model per time series
 
-# run GAM (modified code from CalcLPI function in rlpi package)
-m <- list()
-for(i in 2:ncol(dt)){
-  N <- as.vector(dt[,i])
-  time <- as.vector(dt[,"year"])
-  m[[i-1]] <- mgcv::gam(N ~ s(time, k = round(nrow(dt)/2)), 
-                  family = gaussian(), fx = TRUE, method = "REML")
-}
+gam_canis <- gam(dt[,2] ~ s(dt[,1], k = 13, bs = "tp"),
+                 method = "REML", family = "gaussian")
+pred_canis <- predict(gam_canis, se = TRUE)
 
-# predict over time period
-names(m) <- colnames(dt)[2:4]
-gams <- lapply(m, mgcv::predict.gam, type = "response", se.fit = TRUE) %>%
-  bind_rows(.id = "Binomial") %>%
-  mutate(year = rep(dt[,1], 3)) %>%
-  as.data.frame()
+gam_lepus <- gam(dt[,3] ~ s(dt[,1], k = 13, bs = "tp"),
+                 method = "REML", family = "gaussian")
+pred_lepus <- predict(gam_lepus, se = TRUE)
 
-# plot mean growth rate ----
-p_gams <- ggplot(gams) +
-  geom_ribbon(aes(x = year,
-                  ymin = fit - 1.96*se.fit,
-                  ymax = fit + 1.96*se.fit)) +
-  geom_line(aes(x = year, 
-                y = fit), 
-            color = "white", lwd = 1.1) +
-  #scale_y_log10() +  
-  theme_ipsum_rc() +
-  facet_wrap(~Binomial) +
-  labs(y = "Growth rate (log10)")
-p_gams
+gam_lynx <- gam(dt[,4] ~ s(dt[,1], k = 13, bs = "tp"),
+                 method = "REML", family = "gaussian")
+pred_lynx <- predict(gam_lynx, se = TRUE)
 
+preds_gam <- data.frame(
+  population = rep(colnames(dt)[2:4], each = nrow(dt)),
+  year = rep(dt[,1], 3),
+  dt_gam = c(pred_canis$fit, pred_lepus$fit, pred_lynx$fit),
+  se = c(pred_canis$se.fit, pred_lepus$se.fit, pred_lynx$se.fit)
+)
+
+ggplot(preds_gam, aes(x = year)) +
+  geom_ribbon(aes(ymin = dt_gam - 1.96*se,
+                  ymax = dt_gam + 1.96*se)) +
+  geom_line(aes(y = dt_gam), col = "white") +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2, col = "white") +
+  facet_wrap(~population) +
+  labs(x = "") +
+  coord_cartesian(ylim = c(-1,1))
+
+# take mean from lm predictions ----
+
+errors(preds_gam$dt_gam) <- preds_gam$se
+mean_gam <- preds_gam %>%
+  group_by(year) %>%
+  summarise(mean_dt = log10(gm_mean(10^dt_gam)), .groups = "keep")
+mean_gam$se <- errors(mean_gam$mean_dt) 
+mean_gam$mean_dt <- drop_errors(mean_gam$mean_dt)
+
+# plot!
+ggplot(mean_gam, aes(x = year)) +
+  geom_ribbon(aes(ymin = mean_dt - 1.96*se,
+                  ymax = mean_dt + 1.96*se)) +
+  geom_line(aes(y = mean_dt), col = "white") +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2, col = "white") +
+  labs(x = "")
+
+#### hierarchical model (treating populations as covarying) ----
+
+# build model
+length(unique(ex_dt$year))/2
+ex_dt$Binomial <- as.factor(ex_dt$Binomial)
+hgam <- gam(size ~ 
+              s(year, k = 13, bs = "tp") + 
+              s(Binomial, k = 13, bs = "re"),
+            data = ex_dt, method = "REML", family = "gaussian")
+
+# extract covariance matrix
+hgam_cov <- vcov(hgam, freq = TRUE) %>% cov2cor()
+corrplot::corrplot(hgam_cov, method = "color",
+                   #addCoef.col = "white", # Add coefficient of correlation
+                   #addCoefasPercent = TRUE,
+                   tl.col="black", tl.srt = 45)
+# predict gam
+preds_gam <- mgcv::predict.gam(hgam, se.fit = TRUE)
+
+# add to data frame
+ex_dt <- ex_dt %>%
+  mutate(
+    fit = preds_gam$fit,
+    cilo = preds_gam$fit - 1.96*preds_gam$se.fit,
+    cihi = preds_gam$fit + 1.96*preds_gam$se.fit
+  )
+
+# plot hgam trend
+ggplot(ex_dt, aes(x = year)) +
+  geom_ribbon(aes(ymin = cilo,
+                  ymax = cihi)) +
+  geom_line(aes(y = fit), col = "white") +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2, col = "white") +
+  labs(x = "")
