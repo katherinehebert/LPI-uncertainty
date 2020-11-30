@@ -88,6 +88,23 @@ p_dt <- ggplot(ex_dt) +
 
 (p_ts / p_dt)
 
+# plot dt(t) ~ d(t+1) - stability plot
+
+dt_stability <- ex_dt %>%
+  group_by(Binomial) %>%
+  summarise(
+    year = year,
+    dt_0 = size,
+    dt_1 = size,
+    )
+
+p_all <- ggplot(data = dt_stability) +
+  geom_point(aes(x = dt_0, y = lag(dt_1), col = Binomial)) +
+  geom_abline(aes(slope = 1, intercept = 0), lwd = .2)
+
+p_each <- p_all + facet_wrap(~Binomial)
+
+(p_all / p_each)
 
 # calculate linear covariance between populations ----
 
@@ -153,7 +170,7 @@ ggplot(preds_gam, aes(x = year)) +
   labs(x = "") +
   coord_cartesian(ylim = c(-1,1))
 
-# take mean from lm predictions ----
+# take mean from gam predictions ----
 
 errors(preds_gam$dt_gam) <- preds_gam$se
 mean_gam <- preds_gam %>%
@@ -182,10 +199,14 @@ hgam <- gam(size ~
 
 # extract covariance matrix
 hgam_cov <- vcov(hgam, freq = TRUE) %>% cov2cor()
-corrplot::corrplot(hgam_cov, method = "color",
+hgam_cov_pops <- hgam_cov[grep("Binomial", rownames(hgam_cov)),
+                          grep("Binomial", colnames(hgam_cov))]
+colnames(hgam_cov_pops) <- gsub("_", "\n", levels(ex_dt$Binomial))
+rownames(hgam_cov_pops) <- gsub("_", "\n", levels(ex_dt$Binomial))
+corrplot::corrplot(hgam_cov_pops, method = "color",
                    #addCoef.col = "white", # Add coefficient of correlation
                    #addCoefasPercent = TRUE,
-                   tl.col="black", tl.srt = 45)
+                   tl.col="black", tl.srt = 50, tl.offset = 1)
 # predict gam
 preds_gam <- mgcv::predict.gam(hgam, se.fit = TRUE)
 
