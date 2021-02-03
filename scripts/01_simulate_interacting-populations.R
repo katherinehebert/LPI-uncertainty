@@ -32,8 +32,8 @@ lambda_j = 0.5 # true growth rate
 r = matrix(lambda_i, nrow = n_pairs, ncol = gen) 
 
 # interaction coefficients (competition)
-alpha_ij = 0
-alpha_ji = 0
+alpha_ij = -0.1
+alpha_ji = -0.2
 
 # carrying capacity
 Ki = 190
@@ -41,13 +41,13 @@ Kj = 190
 
 ## ERROR ##
 
-process = runif(n_pairs*gen, -N0i/10, N0i/10) # process error (environmental noise)
-observation = runif(n_pairs*gen, -0.1, 0.1) # observation error
+process = runif(n_pairs*gen, -N0i/20, N0i/20) # process error (environmental noise)
+observation = runif(n_pairs*gen, 0, 0) # observation error
 
-# add observation error to growth rates
-r_error = r + observation
-# process error (environmental noise)
-proc_error = matrix(process, nrow = n_pairs, ncol = gen)
+# add process error to growth rates
+r_error = r + process
+# observation error
+obs_error = matrix(observation, nrow = n_pairs, ncol = gen)
 
 # run simulation --------------------------------------------------------------- 
 
@@ -60,13 +60,13 @@ Nj <- as.matrix(rep(N0j, n_pairs))
 for(t in 1:gen-1){
   
   # population i
-  temp_i = Ni[t]*(1 + r_error[,t]*(1 - (Ni[t] + alpha_ij*Nj[t])/Ki)) + proc_error[,t]
-  temp_i[which(temp_i < 0)] <- 0 # assign 0 to negative population sizes
+  temp_i = Ni[t]*(1 + r_error[,t]*(1 - (Ni[t] + alpha_ij*Nj[t])/Ki)) + obs_error[,t]
+  #temp_i[which(temp_i < 0)] <- 0 # assign 0 to negative population sizes
   Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
   
   # population j
-  temp_j = Nj[t]*(1 + r_error[,t]*(1 - (Nj[t] + alpha_ji*Ni[t])/Kj)) + proc_error[,t]
-  temp_j[which(temp_j < 0)] <- 0 # assign 0 to negative population sizes
+  temp_j = Nj[t]*(1 + r_error[,t]*(1 - (Nj[t] + alpha_ji*Ni[t])/Kj)) + obs_error[,t]
+  #temp_j[which(temp_j < 0)] <- 0 # assign 0 to negative population sizes
   Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
 }
 
@@ -95,7 +95,8 @@ ggplot(N) +
   #geom_hline(yintercept = Ki, lty = 2) +
   #geom_hline(yintercept = Kj, lty = 2) +
   facet_wrap(~ set) + 
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  coord_cartesian(ylim = c(0, max(N$N)+10))
 
 # save outputs -----------------------------------------------------------------
 saveRDS(N, "simulations/paired_antagonistic_l.RDS")
@@ -109,13 +110,13 @@ N_w = cbind(t(Ni), t(Nj))
 # plot covariation
 png("figures/paired_antagonistic_cov.png", width = 500, height = 500)
 cov(N_w) %>% heatmap(Colv = NA, Rowv = NA, 
-                        col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdYlGn"))(10)),
+                        col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdBu"))(10)),
                         main = "Covariation")
 dev.off()
 
 # plot correlation
 png("figures/paired_antagonistic_cor.png", width = 500, height = 500)
 cor(N_w) %>% heatmap(Colv = NA, Rowv = NA, 
-                        col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdYlGn"))(10)), 
+                        col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdBu"))(10)), 
                         main = "Correlation")
 dev.off()
