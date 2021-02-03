@@ -46,13 +46,14 @@ pred = full_join(pops, pred, by = c("popID", "time"))
 
 # plot the predicted trend over the original
 ggplot(pred, aes(x = time, group = popID)) +
-  geom_line(aes(y = N, col = pop), lty = 2, lwd = .5) +
+  #geom_line(aes(y = N, col = pop), lty = 2, lwd = .5) +
   geom_ribbon(aes(ymin = fit - se.fit,
-                  ymax = fit + se.fit, fill = pop), alpha = .3) +
-  geom_line(aes(y = fit)) +
+                  ymax = fit + se.fit, fill = pop), alpha = .1) +
+  geom_line(aes(y = fit, col = pop)) +
   labs(y = "N(t) (log10)", col = "Paired \npopulations", fill = "Paired \npopulations",
        caption = "Ribbon shows standard error from GAM predictions.") + 
-  facet_wrap(~set) 
+  facet_wrap(~set) +
+  theme(legend.position = "none")
 ggsave(filename = "paired_antagonistic_gampredictions.png", path = "figures/", plot = last_plot(),
        width = 7, height = 5, units = "in")
 
@@ -88,8 +89,8 @@ dt_df = full_join(pops, dt, by = c("popID", "time"))
 
 # plot dts
 ggplot(data = dt_df, aes(x = time, group = popID)) +
+  geom_ribbon(aes(ymin = dt-se, ymax = dt+se, fill = pop), alpha = .1) +
   geom_line(aes(y=dt, col = pop)) + 
-  geom_ribbon(aes(ymin = dt-se, ymax = dt+se, fill = pop), alpha = .2) +
   facet_wrap(~set) + 
   labs(y = "Growth rate (log10)", 
       col = "Paired \npopulations", fill = "Paired \npopulations",
