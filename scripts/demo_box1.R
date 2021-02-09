@@ -13,7 +13,12 @@ library(gratia)
 source('scripts/scenario_functions.R')
 
 # set ggplot theme
-theme_set(theme_ipsum_rc())
+theme_set(ggpubr::theme_pubr() +
+            theme(legend.position = c(0.8, 0.92),
+                  legend.direction = "vertical",
+                  axis.title = element_text(size = 18),
+                  axis.text = element_text(size = 16),
+                  legend.text = element_text(size = 11))) +
 
 # 1. explore data to find a good example ----
 
@@ -88,7 +93,8 @@ p_dt <- ggplot(ex_dt) +
 
 (p_ts / p_dt)
 
-# plot dt(t) ~ d(t+1) - stability plot
+
+# plot dt(t) ~ d(t+1) - stability plot ----------------------------------------
 
 dt_stability <- ex_dt %>%
   group_by(Binomial) %>%
@@ -142,15 +148,17 @@ p_mean
 
 # simple linear model per time series
 
-gam_canis <- gam(dt[,2] ~ s(dt[,1], k = 13, bs = "tp"),
+k_length <- 3
+
+gam_canis <- gam(dt[,2] ~ s(dt[,1], k = k_length, bs = "tp"),
                  method = "REML", family = "gaussian")
 pred_canis <- predict(gam_canis, se = TRUE)
 
-gam_lepus <- gam(dt[,3] ~ s(dt[,1], k = 13, bs = "tp"),
+gam_lepus <- gam(dt[,3] ~ s(dt[,1], k = k_length, bs = "tp"),
                  method = "REML", family = "gaussian")
 pred_lepus <- predict(gam_lepus, se = TRUE)
 
-gam_lynx <- gam(dt[,4] ~ s(dt[,1], k = 13, bs = "tp"),
+gam_lynx <- gam(dt[,4] ~ s(dt[,1], k = k_length, bs = "tp"),
                  method = "REML", family = "gaussian")
 pred_lynx <- predict(gam_lynx, se = TRUE)
 
@@ -161,14 +169,20 @@ preds_gam <- data.frame(
   se = c(pred_canis$se.fit, pred_lepus$se.fit, pred_lynx$se.fit)
 )
 
-ggplot(preds_gam, aes(x = year)) +
+(p_gam_each <- ggplot(preds_gam, aes(x = year)) +
   geom_ribbon(aes(ymin = dt_gam - 1.96*se,
-                  ymax = dt_gam + 1.96*se)) +
+                  ymax = dt_gam + 1.96*se,
+                  fill = population)) +
   geom_line(aes(y = dt_gam), col = "white") +
   geom_hline(yintercept = 0, lty = 2, lwd = .2, col = "white") +
   facet_wrap(~population) +
-  labs(x = "") +
-  coord_cartesian(ylim = c(-1,1))
+  labs(x = "", y = "Growth rate (log10)") +
+  coord_cartesian(ylim = c(-.6,.6)) +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_x_continuous(breaks = c(1990, 2000, 2010)) +
+  guides(fill = FALSE) +
+  theme_ipsum_rc(plot_margin = margin(5, 5, 5, 5))
+)
 
 # take mean from gam predictions ----
 
@@ -180,21 +194,25 @@ mean_gam$se <- errors(mean_gam$mean_dt)
 mean_gam$mean_dt <- drop_errors(mean_gam$mean_dt)
 
 # plot!
-ggplot(mean_gam, aes(x = year)) +
+(p_gam_mean <- ggplot(mean_gam, aes(x = year)) +
   geom_ribbon(aes(ymin = mean_dt - 1.96*se,
                   ymax = mean_dt + 1.96*se)) +
   geom_line(aes(y = mean_dt), col = "white") +
   geom_hline(yintercept = 0, lty = 2, lwd = .2, col = "white") +
-  labs(x = "")
+  labs(x = "", y = "Growth rate (log10)") +
+    theme_ipsum_rc(plot_margin = margin(5, 5, 5, 5))
+  )
+
+
 
 #### hierarchical model (treating populations as covarying) ----
 
 # build model
-length(unique(ex_dt$year))/2
+length(unique(ex_dt$year))/3
 ex_dt$Binomial <- as.factor(ex_dt$Binomial)
 hgam <- gam(size ~ 
-              s(year, k = 13, bs = "tp") + 
-              s(Binomial, k = 13, bs = "re"),
+              s(year, k = 8, bs = "tp") + 
+              s(Binomial, k = 8, bs = "re"),
             data = ex_dt, method = "REML", family = "gaussian")
 
 # extract covariance matrix
@@ -219,9 +237,100 @@ ex_dt <- ex_dt %>%
   )
 
 # plot hgam trend
+p_hgam <- ggplot(ex_dt, aes(x = year)) +
+  geom_ribbon(aes(ymin = cilo,
+                  ymax = cihi)) +
+  geom_line(aes(y = fit), col = "white") +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2, col = "white") +
+  labs(x = "", y = "Growth rate (log10)") +
+  theme_ipsum_rc(plot_margin = margin(5, 5, 5, 5))
+
+
+
+# independent species vs. multispecies approach --------------------------------
+
+(p_dt_lepus <-  ggplot(filter(ex_dt, Binomial == "Lepus_americanus")) +
+  geom_line(aes(x = year, y = size, col = Binomial), lwd = 1.1) +
+  #scale_y_log10() +  
+  coord_cartesian(xlim = c(1990, max(ex$year)),
+                  ylim = c(-1.5, 1.5)) + # crop 
+  ggpubr::theme_pubr() +
+  labs(y = "Growth rate (log10)", x = "",
+       col = "") +
+   theme(legend.position = c(0.8, 0.95),
+         legend.direction = "vertical",
+         axis.title = element_text(size = 18),
+         axis.text = element_text(size = 16),
+         legend.text = element_text(size = 11))
+)
+ggsave("figures/box1_ts_lepus.png", width = 5, height = 5)
+
+
+(p_dt_web <-  ggplot(ex_dt) +
+    geom_line(aes(x = year, y = size, col = Binomial), lwd = 1.1) +
+    coord_cartesian(xlim = c(1990, max(ex$year)),
+                    ylim = c(-1.5, 1.5)) + # crop 
+    ggpubr::theme_pubr() +
+    labs(y = "Growth rate (log10)", x = "",
+         col = "") +
+    theme_ipsum_rc(plot_margin = margin(5, 5, 5, 5))+
+    scale_color_brewer(palette = "Dark2") +
+    theme(legend.position = "bottom",
+          legend.direction = "horizontal",
+          axis.title = element_text(size = 18),
+          axis.text = element_text(size = 16),
+          legend.text = element_text(size = 11))
+)
+ggsave("figures/box1_ts_web.png", width = 5.7, height = 3.12)
+
+p_dt_each <- p_dt_web + 
+  facet_wrap(~Binomial) + 
+  scale_x_continuous(breaks = c(1990, 2000, 2010)) +
+  guides(col = FALSE) + labs(title = "") +
+  theme_ipsum_rc(plot_margin = margin(5, 5, 5, 5))
+p_dt_mean <- p_mean + theme(plot.title = element_blank())
+
+
+p_dt_each / p_gam_each / p_gam_mean + plot_annotation(tag_levels = "a")
+#ggsave()
+
+
+# comparison of mean gam and hgam
+p_dt_web / p_hgam + plot_annotation(tag_levels = "a")
+
+
+# plot!
+ggplot(mean_gam, aes(x = year)) +
+  geom_ribbon(aes(ymin = mean_dt - 1.96*se,
+                  ymax = mean_dt + 1.96*se)) +
+  geom_line(aes(y = mean_dt), col = "white") +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2, col = "white") +
+  labs(x = "")
+# plot hgam trend
 ggplot(ex_dt, aes(x = year)) +
   geom_ribbon(aes(ymin = cilo,
                   ymax = cihi)) +
   geom_line(aes(y = fit), col = "white") +
   geom_hline(yintercept = 0, lty = 2, lwd = .2, col = "white") +
   labs(x = "")
+
+ggplot() +
+  # mean GAM
+  geom_ribbon(data = mean_gam,
+              aes(x = year, 
+                  ymin = mean_dt - 1.96*se,
+                  ymax = mean_dt + 1.96*se), 
+              fill = "black") +
+  geom_line(data = mean_gam,
+            aes(x = year,
+                y = mean_dt), 
+            col = "white") +
+  # hierarchical GAM
+  geom_ribbon(data = ex_dt,
+              aes(x = year,
+                  ymin = cilo,
+                  ymax = cihi),
+              fill = "grey50") +
+  geom_line(data = ex_dt,
+            aes(x = year, y = fit), col = "white") +
+  labs(y = "")
