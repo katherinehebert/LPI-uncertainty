@@ -37,12 +37,10 @@ make_gam <- function(simname){
   # predict over time period
   pred_ls = lapply(m, predict.gam, type = "response", se.fit = TRUE)
   
-  
-  
   # wrangle into one long format dataframe
   pred = pred_ls %>%
     lapply(bind_cols) %>%
-    lapply(mutate, time = pops_w[,"time"]) %>%
+    lapply(dplyr::mutate, time = pops_w[,"time"]) %>%
     bind_rows(.id = "popID")
   # join to observation dataframe
   pred = full_join(pops, pred, by = c("popID", "time"))
