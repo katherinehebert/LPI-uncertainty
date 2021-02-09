@@ -1,14 +1,14 @@
-# Function to smechanically simulate two sets of interacting populations and 
+# Function to mechanically simulate two sets of interacting populations and 
 # document their properties (plot time series, calculate and plot correlation and covariance)
 
-mech_sim <- function(
-  npairs, 
-  timesteps, 
-  N0i = 200, N0j = 200, 
-  lambda_i, lambda_j, 
-  alpha_ij, alpha_ji,
-  process, 
-  observation,
+sim_mech <- function(
+  n_pairs = 10, 
+  timesteps = 10, 
+  N0i = N0i, N0j = N0j, 
+  lambda_i = max_lambda, lambda_j = max_lambda, 
+  alpha_ij = 0, alpha_ji = 0,
+  process = proc, 
+  observation = obs,
   K,
   simname){
   
@@ -24,16 +24,16 @@ mech_sim <- function(
   # alpha_ji = interaction coefficient (effect of set i on set j)
   # K = carrying capacity of the environment
   # process = absolute value of the process error limit to add to growth rates
-  # observation = absolute value of the obs error limit to add to population growth rates
+  # observation = absolute value of the obs error limit to add to population sizes
   
   # make growth rates matrix form
   r_i = matrix(lambda_i, nrow = n_pairs, ncol = timesteps) 
   r_j = matrix(lambda_i, nrow = n_pairs, ncol = timesteps) 
   
   # add process error to growth rates
-  process = rnorm(n = n_pairs*timesteps, mean = process, sd = process/10)
-  r_i_error = r_i + process
-  r_j_error = r_j + process
+  process_error = rnorm(n = n_pairs*timesteps, mean = process, sd = process/10)
+  r_i_error = r_i + process_error
+  r_j_error = r_j + process_error
   # observation error
   obs_i_error = matrix(rnorm(n = n_pairs*timesteps, mean = observation, sd = observation/10), nrow = n_pairs, ncol = timesteps)
   obs_j_error = matrix(rnorm(n = n_pairs*timesteps, mean = observation, sd = observation/10), nrow = n_pairs, ncol = timesteps)
@@ -49,11 +49,11 @@ mech_sim <- function(
   for(t in 1:timesteps-1){
     
     # population i
-    temp_i = Ni[t]*(1 + r_i_error[,t]*(1 - (Ni[t] + alpha_ij*Nj[t])/K)) + obs_i_error[,t]
+    temp_i = Ni[t]*(1 + r_i_error[,t]*(1 - (Ni[t] + alpha_ij*Nj[t])/K[t])) + obs_i_error[,t]
     Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
     
     # population j
-    temp_j = Nj[t]*(1 + r_j_error[,t]*(1 - (Nj[t] + alpha_ji*Ni[t])/K)) + obs_j_error[,t]
+    temp_j = Nj[t]*(1 + r_j_error[,t]*(1 - (Nj[t] + alpha_ji*Ni[t])/K[t])) + obs_j_error[,t]
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
   }
   
@@ -75,17 +75,18 @@ mech_sim <- function(
   N = rbind(pops_long(Ni, set_id = "i"), pops_long(Nj, set_id = "j"))
   
   # plot
-  ggplot(N) +
+  N_plot <- ggplot(N) +
     geom_line(aes(x = time, y = N, group = popID, col = popID)) + 
     #geom_hline(yintercept = K, lty = 2) +
     #geom_hline(yintercept = K, lty = 2) +
     facet_wrap(~ set) + 
     theme(legend.position = "none") +
+    scale_x_continuous(breaks = c(1:10)) + 
     coord_cartesian(ylim = c(0, max(N$N)+10))
   
   # save outputs -----------------------------------------------------------------
   saveRDS(N, paste0("simulations/", simname, "_l.RDS"))
-  ggsave(filename = paste0(simname, "_N.png"), path = "figures/", plot = last_plot(),
+  ggsave(filename = paste0(simname, "_N.png"), path = "figures/", plot = N_plot,
          width = 7, height = 5, units = "in")
   
   # calculate covariation --------------------------------------------------------
@@ -107,23 +108,24 @@ mech_sim <- function(
   dev.off()
   
   
-  # # make parameter table
-  # params <- data.frame("i" = c(N0i, 
-  #                              r_i[1,1], 
-  #                              alpha_ji, 
-  #                              paste0("+/-", observation), 
-  #                              paste0("+/-", process)), 
-  #                      "j" = c(N0j, 
-  #                              r_j[1,1], 
-  #                              alpha_ji, 
-  #                              paste0("+/-", observation), 
-  #                              paste0("+/-", process)),
-  #                      row.names = c("Initial size (N0)",
-  #                                    "Maximum growth rate (r)",
-  #                                    "Interaction effect (\\alpha)",
-  #                                    "Observation error",
-  #                                    "Process error"))
-  # write.table(params, paste0("simulations/", simname, "_params.txt"))
-  # 
+  # make parameter table
+  params <- data.frame("parameter" = c("Initial size (N0)",
+                                       "Maximum growth rate (r)",
+                                       "Interaction effect (alpha)",
+                                       "Observation error",
+                                       "Process error"),
+                       "i" = c(N0i,
+                               lambda_i,
+                               alpha_ij,
+                               observation,
+                               process),
+                       "j" = c(N0j,
+                               lambda_j,
+                               alpha_ji,
+                               observation,
+                               process)
+  )
+  saveRDS(params, paste0("simulations/", simname, "_params.RDS"))
+  
   return(N)
 }
