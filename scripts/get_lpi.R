@@ -12,7 +12,7 @@ dt_df <- readRDS(paste0("outputs/", simname, "_results.RDS"))
 
 # calculate expected lpi
 truth <- readRDS(paste0("outputs/", simname, "_true.RDS"))
-temp <- split(truth, time)
+temp <- truth %>% group_by(time) %>% group_split()
 temp <- lapply(temp, function(x) gm_mean(10^x$dt)) %>% unlist() %>% unname() %>% log10()
 lpi_exp <- calclpi(dt = temp)
 
