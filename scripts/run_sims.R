@@ -145,3 +145,61 @@ make_true(n_pairs = pop_pairs, timesteps = steps,
           "scenario06")
 make_gam("scenario06")
 get_lpi("scenario06")
+
+
+# scenario 7: growth, positive covariance, no lag ------
+sim_mech(
+  n_pairs = pop_pairs, timesteps = steps,
+  N0i = 100, N0j = 100,
+  lambda_i = 1.5, lambda_j = 1.5,
+  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
+  process = proc, observation = obs,
+  K = K_increase,
+  "scenario07"
+)
+make_true(n_pairs = pop_pairs, timesteps = steps,
+          N0i = 100, N0j = 100,
+          lambda_i = 1.5, lambda_j = 1.5,
+          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
+          K = K_increase,
+          "scenario07")
+make_gam("scenario07")
+get_lpi("scenario07")
+
+# scenario 8: stable, positive covariance, no lag ------
+sim_mech(
+  n_pairs = pop_pairs, timesteps = steps,
+  N0i = 100, N0j = 100,
+  lambda_i = 1.5, lambda_j = 1.5,
+  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
+  process = proc, observation = obs,
+  K = K_stable,
+  "scenario08"
+)
+make_true(n_pairs = pop_pairs, timesteps = steps,
+          N0i = 100, N0j = 100,
+          lambda_i = 1.5, lambda_j = 1.5,
+          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
+          K = K_stable,
+          "scenario08")
+make_gam("scenario08")
+get_lpi("scenario08")
+
+# scenario 9: growth, positive covariance, no lag ------
+sim_mech(
+  n_pairs = pop_pairs, timesteps = steps,
+  N0i = 100, N0j = 100,
+  lambda_i = 1.5, lambda_j = 1.5,
+  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
+  process = proc, observation = obs,
+  K = K_increase,
+  "scenario09"
+)
+make_true(n_pairs = pop_pairs, timesteps = steps,
+          N0i = 100, N0j = 100,
+          lambda_i = 1.5, lambda_j = 1.5,
+          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
+          K = K_increase,
+          "scenario09")
+make_gam("scenario09")
+get_lpi("scenario09")
