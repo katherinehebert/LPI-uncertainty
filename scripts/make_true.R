@@ -9,6 +9,7 @@ make_true <- function(
   lambda_i, lambda_j, 
   alpha_ij, alpha_ji,
   K,
+  lag_value,
   simname){
   
   ## arguments: ## ----
@@ -22,6 +23,9 @@ make_true <- function(
   # alpha_ij = interaction coefficient (effect of set j on set i)
   # alpha_ji = interaction coefficient (effect of set i on set j)
   # K = carrying capacity of the environment
+  
+  # add more time steps to allow lag
+  timesteps = timesteps + lag_value
   
   # make growth rates matrix form
   r_i = matrix(lambda_i, nrow = n_pairs, ncol = timesteps) 
@@ -37,14 +41,21 @@ make_true <- function(
   # calculate population sizes
   for(t in 1:timesteps-1){
     
+    t_lag = t - lag_value
+    
     # population i
-    temp_i = Ni[t]*(1 + r_i[,t]*(1 - (Ni[t] + alpha_ij*Nj[t])/K[t])) 
+    temp_i = Ni[t]*(1 + r_i[,t]*(1 - (Ni[t] + alpha_ij*Nj[t_lag])/K[t])) 
     Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
     
     # population j
     temp_j = Nj[t]*(1 + r_j[,t]*(1 - (Nj[t] + alpha_ji*Ni[t])/K[t])) 
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
   }
+  
+  # remove extra steps from introduced lag
+  timesteps = timesteps-lag_value
+  Ni <- Ni[,c(1:timesteps)]
+  Nj <- Nj[,c(1:timesteps)]
   
   # plot results -----------------------------------------------------------------
   

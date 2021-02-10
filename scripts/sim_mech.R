@@ -10,6 +10,7 @@ sim_mech <- function(
   process = proc, 
   observation = obs,
   K,
+  lag_value,
   simname){
   
   ## arguments: ## ----
@@ -25,6 +26,9 @@ sim_mech <- function(
   # K = carrying capacity of the environment
   # process = absolute value of the process error limit to add to growth rates
   # observation = absolute value of the obs error limit to add to population sizes
+  
+  # add more time steps to allow lag
+  timesteps = timesteps + lag_value
   
   # make growth rates matrix form
   r_i = matrix(lambda_i, nrow = n_pairs, ncol = timesteps) 
@@ -48,19 +52,26 @@ sim_mech <- function(
   # calculate population sizes
   for(t in 1:timesteps-1){
     
-    # population i
-    temp_i = Ni[t]*(1 + r_i_error[,t]*(1 - (Ni[t] + alpha_ij*Nj[t])/K[t])) + obs_i_error[,t]
-    Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
+    t_lag = t - lag_value
     
+    # population i
+    temp_i = Ni[t]*(1 + r_i_error[,t]*(1 - (Ni[t] + alpha_ij*Nj[t_lag])/K[t])) + obs_i_error[,t]
+    Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
+
     # population j
     temp_j = Nj[t]*(1 + r_j_error[,t]*(1 - (Nj[t] + alpha_ji*Ni[t])/K[t])) + obs_j_error[,t]
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
   }
   
+  # remove extra steps from introduced lag
+  timesteps = timesteps-lag_value
+  Ni <- Ni[,c(1:timesteps)]
+  Nj <- Nj[,c(1:timesteps)]
+  
   # plot results -----------------------------------------------------------------
   
   # create vector of time values for plotting
-  time <- 1:timesteps
+  time <- 1:(timesteps-lag_value)
   
   # function to wrangle the results into long format 
   pops_long <- function(pops_df, n = n_pairs, g = timesteps, set_id) {
@@ -77,8 +88,6 @@ sim_mech <- function(
   # plot
   N_plot <- ggplot(N) +
     geom_line(aes(x = time, y = N, group = popID, col = popID)) + 
-    #geom_hline(yintercept = K, lty = 2) +
-    #geom_hline(yintercept = K, lty = 2) +
     facet_wrap(~ set) + 
     theme(legend.position = "none") +
     scale_x_continuous(breaks = c(1:10)) + 
@@ -113,17 +122,20 @@ sim_mech <- function(
                                        "Maximum growth rate (r)",
                                        "Interaction effect (alpha)",
                                        "Observation error",
-                                       "Process error"),
+                                       "Process error",
+                                       "Lag"),
                        "i" = c(N0i,
                                lambda_i,
                                alpha_ij,
                                observation,
-                               process),
+                               process,
+                               lag_value),
                        "j" = c(N0j,
                                lambda_j,
                                alpha_ji,
                                observation,
-                               process)
+                               process,
+                               0)
   )
   saveRDS(params, paste0("simulations/", simname, "_params.RDS"))
   
