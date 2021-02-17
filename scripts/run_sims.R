@@ -63,7 +63,7 @@ make_true(n_pairs = pop_pairs, timesteps = steps,
           N0i = 100, N0j = 100,
           lambda_i = 1.5, lambda_j = 1.5,
           alpha_ij = 0, alpha_ji = 0,
-          K = K_decline,
+          K = K_stable,
           lag_value = 0,
           "scenario02")
 make_gam("scenario02")
