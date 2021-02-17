@@ -290,14 +290,14 @@ make_gam("scenario12")
 get_lpi("scenario12")
 
 
-# scenario 13: growth, positive covariance, lag-1 ------
+# scenario 13: decline, positive covariance, lag-1 ------
 sim_mech(
   n_pairs = pop_pairs, timesteps = steps,
   N0i = 100, N0j = 100,
   lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
+  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here 
   process = proc, observation = obs,
-  K = K_increase,
+  K = K_decline,
   lag_value = 1,
   "scenario13"
 )
@@ -305,7 +305,7 @@ make_true(n_pairs = pop_pairs, timesteps = steps,
           N0i = 100, N0j = 100,
           lambda_i = 1.5, lambda_j = 1.5,
           alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_increase,
+          K = K_decline,
           lag_value = 1,
           "scenario13")
 make_gam("scenario13")
