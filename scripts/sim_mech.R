@@ -76,11 +76,11 @@ sim_mech <- function(
   # function to wrangle the results into long format 
   pops_long <- function(pops_df, n = n_pairs, g = timesteps, set_id) {
     pops_df = as.data.frame(pops_df)
-    colnames(pops_df) = time
-    pops_df = mutate(.data = pops_df, "popID" = paste(set_id, sprintf("pop%s", 1:n), sep = "-")) %>%
-      pivot_longer(cols = 1:all_of(g), names_to = "time", values_to = "N") %>%
-      separate(popID, into = c("set", "pop"), sep = "-", remove = FALSE) %>%
-      mutate_at(vars(time), as.integer)
+    colnames(pops_df) = 1:g
+    pops_df$popID <- paste(set_id, sprintf("pop%s", 1:n), sep = "-") 
+    pops_df <- pivot_longer(pops_df, cols = all_of(1:g), names_to = "time", values_to = "N") %>% 
+      tidyr::separate(popID, into = c("set", "pop"), sep = "-", remove = FALSE) %>%      
+      mutate("time" = as.integer(time))
   }
   # bind together
   N = rbind(pops_long(Ni, set_id = "i"), pops_long(Nj, set_id = "j"))
