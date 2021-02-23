@@ -1,0 +1,154 @@
+---
+title: "Accuracy and precision of the LPI"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+    number_sections: yes
+    theme: lumen
+---
+
+```{r setup, include=FALSE}
+# libraries
+require(kableExtra)
+require(ggplot2)
+require(patchwork)
+
+# chunk params
+knitr::opts_chunk$set(echo = FALSE, 
+                      warning=FALSE, 
+                      message=FALSE,
+                      fig.height = 3)
+
+# set ggplot theme
+theme_set(ggpubr::theme_pubr())
+
+# load results
+df <- readRDS("~/Documents/GitHub/LPI-sensitivity/outputs/all_results.RDS")
+```
+
+# Sensitivity to direction of population change
+
+**(1) How does the direction of change influence the accuracy and precision of the Living Planet Index?**
+
+```{r q1-trend}
+ggplot(dplyr::filter(df, Lag == "0" & interaction == "0"),
+       aes(x = time, group = scenario, col = direction)) +
+  geom_line(aes(y = LPI_boot)) +
+  geom_line(aes(y = LPI_true), lty = 2) +
+  facet_wrap(~direction) +
+  theme_linedraw() + 
+  theme(panel.grid = element_blank(),
+        legend.position = "none")
+```
+
+
+```{r q1-accuracy}
+a <- ggplot(dplyr::filter(df, Lag == "0" & interaction == "0"), 
+       aes(y = direction, x = accuracy_boot, col = direction)) +
+  geom_jitter(height = .1, alpha = .3, size = 2) +
+  stat_summary(fun.data = mean_se, 
+               fun.args = list(mult=1),
+               geom = "pointrange", 
+               position = position_dodge(width = .5)) + 
+  labs(y = "", x = "Accuracy (% difference in LPI)") +
+  geom_vline(xintercept = 0, lty = 2, lwd = .2) +
+  coord_cartesian(xlim = c(-20,20)) +
+  theme(legend.position = "none")
+b <- ggplot(dplyr::filter(df, Lag == "0" & interaction == "0"), 
+       aes(y = direction, x = interval_width, col = direction)) +
+  geom_jitter(height = .1, alpha = .3, size = 2) +
+  stat_summary(fun.data = mean_se, 
+               fun.args = list(mult=1),
+               geom = "pointrange", 
+               position = position_dodge(width = .5)) + 
+  labs(y = "", x = "Precision (CI Width / LPI value)") +
+  coord_cartesian(xlim = c(0,.1)) +
+  theme(legend.position = "none")
+a + b
+```
+
+# Sensitivity to covariation between populations
+
+**(2) How does covariation influence the accuracy and precision of the Living Planet Index?**
+
+```{r q2-trend}
+ggplot(dplyr::filter(df, Lag == "0"),
+       aes(x = time, group = scenario, col = direction)) +
+  geom_line(aes(y = LPI_boot)) +
+  geom_line(aes(y = LPI_true), lty = 2) +
+  facet_wrap(~interaction) +
+  theme_linedraw() + 
+  theme(panel.grid = element_blank(),
+        legend.position = "none")
+```
+
+```{r q2}
+a <- ggplot(dplyr::filter(df, Lag == "0" & direction == "stable"), 
+       aes(y = interaction, x = accuracy_boot, col = interaction)) +
+  geom_jitter(alpha = .3, size = 2, height = .1) +
+  stat_summary(fun.data = mean_se, fun.args = list(mult=1),
+               geom = "pointrange", position = position_dodge(width = .5)) + 
+  labs(y = "Interaction effect", x = "Accuracy (% difference in LPI)") +
+  theme(legend.position = "none") +
+  scale_color_brewer(palette = "Dark2") +
+  geom_vline(xintercept = 0, lty = 2, lwd = .2) +
+  coord_cartesian(xlim = c(-10,10))
+b <- ggplot(dplyr::filter(df, Lag == "0" & direction == "stable"), 
+       aes(y = interaction, x = interval_width, col = interaction)) +
+  geom_jitter(height = .1, alpha = .3, size = 2) +
+  stat_summary(fun.data = mean_se, fun.args = list(mult=1),
+               geom = "pointrange", position = position_dodge(width = .5)) + 
+  labs(y = "", x = "Precision (CI width / LPI)") +
+  theme(legend.position = "none") +
+  scale_color_brewer(palette = "Dark2") +
+  coord_cartesian(xlim = c(0,.1)) 
+a + b
+```
+
+# Sensitivity to lag in covariation
+
+**(3) How does lagged covariation influence the accuracy and precision of the Living Planet Index?**
+
+```{r q3-trend}
+ggplot(dplyr::filter(df, interaction != "0"),
+       aes(x = time, group = scenario, col = direction)) +
+  geom_line(aes(y = LPI_boot)) +
+  geom_line(aes(y = LPI_true), lty = 2) +
+  facet_grid(interaction~Lag) +
+  theme_linedraw() + 
+  theme(panel.grid = element_blank(),
+        legend.position = "none")
+```
+
+```{r q3,fig.pos="hold"}
+a <- ggplot(dplyr::filter(df, interaction != "0"), 
+            aes(y = Lag, x = accuracy_boot, col = interaction)) +
+  stat_summary(fun.data = mean_se, 
+               fun.args = list(mult=1),
+               geom = "pointrange", 
+               position = position_dodge(width = .5)) + 
+  labs(y = "Lag", x = "Accuracy (% difference in LPI)") +
+  geom_vline(xintercept = 0, lty = 2, lwd = .2) +
+  facet_wrap(~direction) + 
+  theme_linedraw() +
+  scale_colour_manual(values = c("#1b9e77", "#7570b3")) +
+  coord_cartesian(xlim = c(-30,30))
+
+b <- ggplot(dplyr::filter(df, interaction != "0"), 
+            aes(y = Lag, x = interval_width, col = interaction)) +
+  stat_summary(fun.data = mean_se, 
+               fun.args = list(mult=1),
+               geom = "pointrange", 
+               position = position_dodge(width = .5)) + 
+  labs(y = "Lag", x = "Precision (CI width / LPI)") +
+  facet_wrap(~direction) + 
+  theme_linedraw() +
+  scale_colour_manual(values = c("#1b9e77", "#7570b3")) +
+  coord_cartesian(xlim = c(0, 0.15))
+a
+b
+```
