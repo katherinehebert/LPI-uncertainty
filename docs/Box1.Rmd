@@ -1,0 +1,39 @@
+---
+date: "09/03/2021"
+output: bookdown::pdf_document2
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Box 1. Estimating covarying population trends of interacting species
+
+Population trends are one of the key metrics to assess biodiversity change, informing decisions at the global level . Because biodiversity change is largely viewed as an accumulation of individual species' responses to a changing environment, population trends are often estimated under the unspoken assumption that they are responding independently to their environment. This approach ignores that populations co-occurring in space can covary in direct response to the environmental change, or indirectly due to the way environmental change alters their interactions with other species [@walter2017]. This covariation can be positive, where population dynamics become **synchronous** or positively correlated through time. Negative covariation occurs when population dynamics become **asynchronous**, meaning growth in one population coincides with declines in another.
+
+A classic example of covarying populations are the Canadian lynx (*Lynx canadensis*), which fluctuates depending on its prey (*Lepus americanus*) ([Figure 1](#timeseries)).
+
+![](images/box1_ts_web.png){#timeseries width="524"}
+
+**Figure 1. Time series of snowshoe hare (*Lepus americanus*) and Canadian lynx (*Lynx canadensis*) population abundances in south-central Yukon between 1987 and 1994, from @mowat2003.** These populations covary positively through time as a result of their strong predator-prey relationship.
+
+We use two approaches to measure the overall population trend in this community: **(1)** an aggregated mean from single-population models as in the Living Planet Index, and **(2)** a hierarchical model which estimates a global trend among the three populations. In the first approach, we fit a generalized additive model (GAM) to each population's abundance through time, and average the models' predictions to obtain an overall trend ([Figure 2](#individual-gams))
+
+![](images/box1_individualGAM_fullresults.png){#individual-gams}
+
+**Figure 2:** **The first approach to estimate the overall population trend in this community.** **(a)** Individual GAMs are fit to each population's growth rates, and **(b)** predictions from these GAMs are averaged together to obtain an overall trend. The dotted line shows the expected trend for each population in **(a)** and the overall expected mean trend in **(b).** The solid line shows the predicted trend in each population's annual growth rate, accompanied by 95% confidence intervals.
+
+In the second, we fit a hierarchical GAM to all population trends at once, with different smoothness per population and a shared trend across all populations. This allows individual population trends to vary differently, while estimating an overall trend that represents the common trend among the included populations ([Figure 3](#hgam)).
+
+![](images/box1_hgam_alltrends.png){#hgam} The two approaches estimate similar trends ([Figure 4a](#compare)), with some minor differences. The hierarchical approach achieves a slightly more precise estimation of the overall trend ([Figure 4b](#compare)) with slightly more accuracy ([Figure 4c](#compare)).
+
+![](images/box1_compare_all_results.png){#compare}
+
+[Figure 4a](#compare): Comparison of the aggregated mean GAM and hierarchical GAM approaches to estimate an overall trend for two interacting populations.
+
+Importantly, the hierarchical approach also offers greater "under the hood" detail about how these populations are covarying, and how this might be influencing the uncertainty in the overall trend. By explicitly treating the covariation of interacting populations in our hierarchical model, we can access the variance-covariance matrix which describes how they covary at each point in time for which a smoother is estimated (Figure 5).
+
+![](images/box1_covariance_allsmoothers.png){#vcov}
+
+**Figure 5. Variance-covariance matrix describing the correlation in the variance of each estimated smoother in the hierarchical GAM.**
