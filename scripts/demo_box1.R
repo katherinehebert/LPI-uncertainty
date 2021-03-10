@@ -128,11 +128,12 @@ p_all <- ggplot(data = dt_stability) +
   geom_point(aes(x = dt_0, y = lag(dt_1), col = Binomial)) +
   geom_abline(aes(slope = 1, intercept = 0), lwd = .2)  +
   ts_plot + labs(x = "Growth rate (t = 0)", y = "Growth rate (t = 1)") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  coord_cartesian(xlim = c(-1,1), ylim = c(-1,1))
 
 p_each <- p_all + facet_wrap(~Binomial)
 
-(p_all / p_each)
+p_all / p_each
 
 
 # calculate linear covariance between populations ----
@@ -141,7 +142,6 @@ cov_ex_dt <- dt[,2:ncol(dt)] %>% cov() %>% cov2cor()
 corrplot::corrplot(cov_ex_dt, type = "upper", method = "color",
                    addCoef.col = "white", # Add coefficient of correlation
                    tl.col="black", tl.srt = 45)
-
 
 # # calculate synchrony ----
 # 
@@ -331,14 +331,15 @@ corrplot::corrplot(
 dev.off()
 
 # year smoothers per population
-# corrplot::corrplot(
-#   hgam_cov[6:13, 6:13],
-#   #hgam_cov[10:34,10:34], 
-#                    method = "color", 
-#                    diag = FALSE, 
-#                    type = "lower",
-#                    tl.cex = 0.5, tl.col="black", 
-#                    tl.offset = 1)
+png("figures/box1_covariance_smoothersperpopulation.png", width = 7.08, height = 4.37, units = "in", res = 900)
+corrplot::corrplot(
+  hgam_cov_plot[5:13, 6:14],
+                   method = "color",
+                   diag = FALSE,
+                   type = "lower",
+                   tl.cex = 0.5, tl.col="black",
+                   tl.offset = 1, tl.srt = 10)
+dev.off()
 
 # predict gam
 preds_hgam <- mgcv::predict.gam(hgam, se.fit = TRUE)
