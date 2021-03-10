@@ -398,9 +398,12 @@ preds_gam_G <- data.frame(
       ylim = c(-1.5, 1.5)) + # crop 
     labs(y = "Growth rate", x = "",
          col = "Populations") +
-   ts_plot
+   ts_plot 
 )
-ggsave("figures/box1_ts_web.png", width = 5.27, height = 3.83)
+((p_ts + theme(legend.position = "none")) + p_dt_web)
+ggsave("figures/box1_ts_web.png", width = 7.98, height = 3.14)
+
+
 
 # full individual GAM results
 p_gam_each + p_gam_mean +
