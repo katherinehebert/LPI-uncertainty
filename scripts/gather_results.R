@@ -48,7 +48,7 @@ if(df$LPI_true < df$cihi_boot && df$LPI_true > df$cilo_boot){
     df$precision_boot <- "no"
   }
 # interval width divided by the lpi value
-df$interval_width <- (df$cihi_boot df$cilo_boot)/df$LPI_boot
+df$interval_width <- ((df$cihi_boot-df$cilo_boot)/df$LPI_boot)*100
 
 # format columns for plotting
 df$Lag <- factor(df$Lag, levels = c("0", "1", "2"))
