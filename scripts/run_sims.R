@@ -23,6 +23,18 @@ K_increase = 100 + 4*c(0:9)
 K_stable = rep(100, 10)
 K_decline = 100 - 4*c(0:9)
 # plot these!
+K_plot <- data.frame(
+  time = 1:steps,
+  scenario = factor(c(rep("increase", steps), rep("stable", steps), rep("decline", steps)),
+                    levels = c("increase", "stable", "decline")),
+  K = c(K_increase, K_stable, K_decline)
+)
+ggplot(K_plot) +
+  geom_line(aes(x = time, y = K, col = scenario)) +
+  labs(x = "", y = "Carrying capacity (K)", col = "Biodiversity change\n scenario") +
+  theme(legend.position = "right") +
+  scale_x_continuous(breaks = c(1:10))
+ggsave("figures/carryingcapacity.png", width = 5.04, height = 3.38)
 
 ## SET A: no covariance from interactions ## ------------------------------------------
 
