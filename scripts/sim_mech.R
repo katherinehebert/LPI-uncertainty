@@ -11,7 +11,8 @@ sim_mech <- function(
   observation = obs,
   K,
   lag_value,
-  simname){
+  simname,
+  save_figs = TRUE){
   
   ## arguments: ## ----
   
@@ -32,7 +33,7 @@ sim_mech <- function(
   
   # make growth rates matrix form
   r_i = matrix(lambda_i, nrow = n_pairs, ncol = timesteps) 
-  r_j = matrix(lambda_i, nrow = n_pairs, ncol = timesteps) 
+  r_j = matrix(lambda_j, nrow = n_pairs, ncol = timesteps) 
   
   # add process error to growth rates
   process_error = rnorm(n = n_pairs*timesteps, mean = process, sd = process/10)
@@ -50,53 +51,74 @@ sim_mech <- function(
   
   # Nt+1_i = Nt_i + rNt_i * ((1 - Nt_i/K_i) + alpha_ji*Nt_j/K_j
   # calculate population sizes
-  for(t in 1:timesteps-1){
-    
-    t_lag = t - lag_value
+  for(t in 1:timesteps){
     
     # population i
-    temp_i = Ni[t]*(1 + r_i_error[,t]*(1 - (Ni[t] + alpha_ij*Nj[t_lag])/K[t])) + obs_i_error[,t]
+    temp_i = Ni[,t]*(1 + r_i_error[,t]*(1 - (Ni[,t] + alpha_ij*Nj[,t])/K[t])) + obs_i_error[,t]
+    temp_i[which(is.na(temp_i))] <- 0
     Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
-
+    
     # population j
-    temp_j = Nj[t]*(1 + r_j_error[,t]*(1 - (Nj[t] + alpha_ji*Ni[t])/K[t])) + obs_j_error[,t]
+    temp_j = Nj[,t]*(1 + r_j_error[,t]*(1 - (Nj[,t] + alpha_ji*Ni[,t])/K[t])) + obs_j_error[,t]
+    temp_j[which(is.na(temp_j))] <- 0
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
+  }
+
+  # introduce lag to populations j
+  if(lag_value != 0){
+    # print("running") # to test the loop
+    Nj <- Nj[,1:(lag_value + 1)]
+    for(t in c(lag_value + 1):timesteps){
+      # population j
+      temp_j = Nj[,t]*(1 + r_j_error[,t]*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t])) + obs_j_error[,t]
+      temp_j[which(is.na(temp_j))] <- 0
+      #print(temp_j)
+      Nj <- cbind(Nj, temp_j)
+    }
   }
   
   # remove extra steps from introduced lag
-  timesteps = timesteps-lag_value
+  timesteps <- timesteps - lag_value
   Ni <- Ni[,c(1:timesteps)]
   Nj <- Nj[,c(1:timesteps)]
   
   # plot results -----------------------------------------------------------------
   
   # create vector of time values for plotting
-  time <- 1:(timesteps-lag_value)
+  time <- 1:timesteps
   
   # function to wrangle the results into long format 
-  pops_long <- function(pops_df, n = n_pairs, g = timesteps, set_id) {
+  pops_long <- function(pops_df, n = n_pairs, g = time, set_id) {
     pops_df = as.data.frame(pops_df)
-    colnames(pops_df) = 1:g
+    colnames(pops_df) = as.character(g)
     pops_df$popID <- paste(set_id, sprintf("pop%s", 1:n), sep = "-") 
-    pops_df <- pivot_longer(pops_df, cols = all_of(1:g), names_to = "time", values_to = "N") %>% 
-      tidyr::separate(popID, into = c("set", "pop"), sep = "-", remove = FALSE) %>%      
-      mutate("time" = as.integer(time))
+    pops_df <- pivot_longer(pops_df, 
+                            cols = !popID, 
+                            names_to = "time", 
+                            values_to = "N",
+                            ) %>% 
+      tidyr::separate(popID, into = c("set", "pop"), sep = "-", remove = FALSE) 
+    pops_df$time <- as.integer(pops_df$time)
+    return(pops_df)
   }
   # bind together
   N = rbind(pops_long(Ni, set_id = "i"), pops_long(Nj, set_id = "j"))
   
-  # plot
-  N_plot <- ggplot(N) +
-    geom_line(aes(x = time, y = N, group = popID, col = popID)) + 
-    facet_wrap(~ set) + 
-    theme(legend.position = "none") +
-    scale_x_continuous(breaks = c(1:10)) + 
-    coord_cartesian(ylim = c(0, max(N$N)+10))
-  
-  # save outputs -----------------------------------------------------------------
-  saveRDS(N, paste0("simulations/", simname, "_l.RDS"))
-  ggsave(filename = paste0(simname, "_N.png"), path = "figures/", plot = N_plot,
-         width = 7, height = 5, units = "in")
+  if(save_figs == TRUE){
+    
+    # plot
+    N_plot <- ggplot(N) +
+      geom_line(aes(x = time, y = N, group = popID, col = popID)) + 
+      facet_wrap(~ set) + 
+      theme(legend.position = "none") +
+      scale_x_continuous(breaks = c(1:10)) + 
+      coord_cartesian(ylim = c(0, max(N$N)+10))
+    
+    # save outputs -----------------------------------------------------------------
+    saveRDS(N, paste0("simulations/", simname, "_l.RDS"))
+    ggsave(filename = paste0(simname, "_N.png"), path = "figures/", plot = N_plot,
+           width = 7, height = 5, units = "in")
+
   
   # calculate covariation --------------------------------------------------------
   
@@ -139,5 +161,6 @@ sim_mech <- function(
   )
   saveRDS(params, paste0("simulations/", simname, "_params.RDS"))
   
+  }
   return(N)
 }
