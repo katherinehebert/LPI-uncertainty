@@ -7,18 +7,30 @@
 #    http://shiny.rstudio.com/
 #
 
+library(dplyr)
+library(tidyr)
 library(shiny)
 library(ggplot2)
 library(patchwork)
+library(thematic)
 source('~/Documents/GitHub/LPI-Sensitivity/scripts/sim_mech.R')
 
 plot_function <- function(df){
     ggplot(df) + 
         geom_line(aes(x = time, y = N, col = popID, group = popID)) + 
-        theme_linedraw() +
+        #theme_linedraw() +
+        coord_cartesian(ylim = c(10, 190)) +
         facet_wrap(~set, dir = "h") +
-        theme(legend.position = "none")
+        theme(legend.position = "none") 
 }
+
+# styling
+library(bslib)
+cute_theme <- bs_theme(
+    bg = "#FFFFFF", fg = "#003f5c", primary = "#bc5090", 
+    base_font = font_google("Lexend"),
+    heading_font = font_google("Lexend")
+)
 
 ## CARRYING CAPACITY SCENARIOS ##  ------
 K_increase = 100 + 4*c(0:9)
@@ -27,7 +39,7 @@ K_decline = 100 - 4*c(0:9)
 K_list = list(K_decline, K_stable, K_increase)
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
+ui <- fluidPage(theme = cute_theme,
 
     # Application title
     titlePanel("Simulating interacting populations"),
@@ -65,6 +77,11 @@ ui <- fluidPage(
                         min = 0,
                         max = 50,
                         value = 10),
+            sliderInput("lag",
+                        "Lag in interaction:",
+                        min = 0,
+                        max = 5,
+                        value = 0)
          ),
 
         # Show a plot of the generated distribution
@@ -73,6 +90,8 @@ ui <- fluidPage(
         )
     )
 )
+
+thematic_shiny()
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
@@ -93,8 +112,7 @@ server <- function(input, output) {
             process = input$process, 
             observation = input$obs,
             K = K_list[[i]],
-            lag_value = 0,
-            "shiny_sim",
+            lag_value = input$lag,
             save_figs = FALSE
         )
 }
