@@ -32,9 +32,9 @@ cute_theme <- bs_theme(
 )
 
 ## CARRYING CAPACITY SCENARIOS ##  ------
-K_increase = 100 + 5*c(0:9)
+K_increase = 100 + 4*c(0:9)
 K_stable = rep(100, 10)
-K_decline = 100 - 5*c(0:9)
+K_decline = 100 - 4*c(0:9)
 K_list = list(K_decline, K_stable, K_increase)
 
 # Define UI for application that draws a histogram
