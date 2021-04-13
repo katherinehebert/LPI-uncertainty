@@ -18,7 +18,6 @@ source('~/Documents/GitHub/LPI-Sensitivity/scripts/sim_mech.R')
 plot_function <- function(df){
     ggplot(df) + 
         geom_line(aes(x = time, y = N, col = popID, group = popID)) + 
-        #theme_linedraw() +
         coord_cartesian(ylim = c(10, 190)) +
         facet_wrap(~set, dir = "h") +
         theme(legend.position = "none") 
@@ -27,15 +26,15 @@ plot_function <- function(df){
 # styling
 library(bslib)
 cute_theme <- bs_theme(
-    bg = "#FFFFFF", fg = "#003f5c", primary = "#bc5090", 
-    base_font = font_google("Lexend"),
-    heading_font = font_google("Lexend")
+    bg = "#FFFFFF", fg = "#003f5c", primary = "#003f5c", 
+    base_font = font_google("Roboto"),
+    heading_font = font_google("Roboto")
 )
 
 ## CARRYING CAPACITY SCENARIOS ##  ------
-K_increase = 100 + 4*c(0:9)
+K_increase = 100 + 5*c(0:9)
 K_stable = rep(100, 10)
-K_decline = 100 - 4*c(0:9)
+K_decline = 100 - 5*c(0:9)
 K_list = list(K_decline, K_stable, K_increase)
 
 # Define UI for application that draws a histogram
