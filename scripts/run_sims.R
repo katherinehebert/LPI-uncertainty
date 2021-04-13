@@ -11,17 +11,15 @@ source('scripts/get_lpi.R')
 # set theme for all ggplots
 theme_set(ggpubr::theme_pubr())
 
-## COMMON PARAMS ## ------
+## COMMON PARAMS ---------------------------------------------------------------
 pop_pairs = 10
 steps = 10
-max_lambda = 1.5
-proc = 0.1
-obs = 10
+obs = 5
 
-## CARRYING CAPACITY SCENARIOS ##  ------
-K_increase = 100 + 4*c(0:9)
+## CARRYING CAPACITY SCENARIOS -------------------------------------------------
+K_increase = 100 + 5*c(0:9)
 K_stable = rep(100, 10)
-K_decline = 100 - 4*c(0:9)
+K_decline = 100 - 5*c(0:9)
 # plot these!
 K_plot <- data.frame(
   time = 1:steps,
@@ -36,462 +34,341 @@ ggplot(K_plot) +
   scale_x_continuous(breaks = c(1:10))
 ggsave("figures/carryingcapacity.png", width = 5.04, height = 3.38)
 
-## SET A: no covariance from interactions ## ------------------------------------------
 
-## scenario01: extreme decline, no covariance, no lag  ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0, alpha_ji = 0,
-  process = proc, observation = obs,
-  K = K_decline,
-  lag_value = 0,
-  "scenario01"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0, alpha_ji = 0,
-          K = K_decline,
-          lag_value = 0,
-          "scenario01")
-make_gam("scenario01")
-get_lpi("scenario01")
+## SET 1: no covariance from interactions --------------------------------------
 
+# how does direction affect the LPI?
+# scenario1A: extreme decline, no covariance, no lag, no process error
+# scenario1B: stable, no covariance, no lag, no process error
+# scenario1C: growth, no covariance, no lag, no process error 
 
-# scenario02: stable, no covariance, no lag ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0, alpha_ji = 0,
-  process = proc, observation = obs,
-  K = K_stable,
-  lag_value = 0,
-  "scenario02"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0, alpha_ji = 0,
-          K = K_stable,
-          lag_value = 0,
-          "scenario02")
-make_gam("scenario02")
-get_lpi("scenario02")
+# is this finding robust to process error?
+# level 1: low process error
+# scenario1D: extreme decline, no covariance, no lag, low process error
+# scenario1E: stable, no covariance, no lag, low process error
+# scenario1F: growth, no covariance, no lag, low process error
 
+# is this finding robust to process error?
+# level 2: high process error
+# scenario1G: extreme decline, no covariance, no lag, high process error
+# scenario1H: stable, no covariance, no lag, high process error
+# scenario1I: growth, no covariance, no lag, high process error
 
-# scenario 3: growth, no covariance, no lag ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0, alpha_ji = 0,
-  process = proc, observation = obs,
-  K = K_increase,
-  lag_value = 0,
-  "scenario03"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0, alpha_ji = 0,
-          K = K_increase,
-          lag_value = 0,
-          "scenario03")
-make_gam("scenario03")
-get_lpi("scenario03")
+sim_names <- paste0("scenario1", LETTERS[1:9])
+K_scenarios <- rep(list(K_decline, K_stable, K_increase), 3)
+proc_error <- rep(c(0, 0.1, 0.2), each = 3)
+
+for(i in 1:length(sim_names)){
+  filename <- sim_names[[i]]
+  sim_mech(
+    n_pairs = pop_pairs, timesteps = steps,
+    N0i = 100, N0j = 100,
+    lambda_i = 1.5, lambda_j = 1.5,
+    alpha_ij = 0, alpha_ji = 0,
+    process = proc_error[i], 
+    observation = obs,
+    K = K_scenarios[[i]],
+    lag_value = 0
+  )
+  make_true(n_pairs = pop_pairs, timesteps = steps,
+            N0i = 100, N0j = 100,
+            lambda_i = 1.5, lambda_j = 1.5,
+            alpha_ij = 0, alpha_ji = 0,
+            K = K_scenarios[[i]],
+            lag_value = 0)
+  make_gam(filename)
+  get_lpi(filename)
+}
 
 
-## SET B: no-lag covariance from interactions ## -----------------------------------
 
-## scenario 4: extreme decline, negative covariance, no lag  ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_decline,
-  lag_value = 0,
-  "scenario04"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_decline,
-          lag_value = 0,
-          "scenario04")
-make_gam("scenario04")
-get_lpi("scenario04")
+## SET 2: negative covariance from interactions --------------------------------
 
+# how does negative covariation affect the LPI?
+# scenario2A: extreme decline, negative covariance, no lag, no process error
+# scenario2B: stable, negative covariance, no lag, no process error
+# scenario2C: growth, negative covariance, no lag, no process error
 
-# scenario 5: stable, negative covariance, no lag ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_stable,
-  lag_value = 0,
-  "scenario05"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_stable,
-          lag_value = 0,
-          "scenario05")
-make_gam("scenario05")
-get_lpi("scenario05")
+# is this finding robust to process error?
+# level 1: low process error
+# scenario2D: extreme decline, negative covariance, no lag, low process error
+# scenario2E: stable, negative covariance, no lag, low process error
+# scenario2F: growth, negative covariance, no lag, low process error
 
-# scenario 6: growth, negative covariance, no lag ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_increase,
-  lag_value = 0,
-  "scenario06"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_increase,
-          lag_value = 0,
-          "scenario06")
-make_gam("scenario06")
-get_lpi("scenario06")
+# is this finding robust to process error?
+# level 2: high process error
+# scenario2G: extreme decline, negative covariance, no lag, high process error
+# scenario2H: stable, negative covariance, no lag, high process error
+# scenario2I: growth, negative covariance, no lag, high process error
+
+# scenarios 2J-2R: same levels, but with strong negative covariance
+
+sim_names <- paste0("scenario2", LETTERS[1:18])
+K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
+alphas <- rep(list(c(-0.1, 0.1), c(-0.2, 0.2)), each = 9)
+proc_error <- rep(rep(c(0, 0.1, 0.2), each = 3), 2)
+
+for(i in 1:length(sim_names)){
+  filename <- sim_names[[i]]
+  sim_mech(
+    n_pairs = pop_pairs, timesteps = steps,
+    N0i = 100, N0j = 100,
+    lambda_i = 1.5, lambda_j = 1.5,
+    alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+    process = proc_error[i], 
+    observation = obs,
+    K = K_scenarios[[i]],
+    lag_value = 0
+  )
+  make_true(n_pairs = pop_pairs, timesteps = steps,
+            N0i = 100, N0j = 100,
+            lambda_i = 1.5, lambda_j = 1.5,
+            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+            K = K_scenarios[[i]],
+            lag_value = 0)
+  make_gam(filename)
+  get_lpi(filename)
+}
 
 
-# scenario 7: decline, positive covariance, no lag ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_decline,
-  lag_value = 0,
-  "scenario07"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_decline,
-          lag_value = 0,
-          "scenario07")
-make_gam("scenario07")
-get_lpi("scenario07")
+## SET 3: positive covariance from interactions --------------------------------
 
-# scenario 8: stable, positive covariance, no lag ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_stable,
-  lag_value = 0,
-  "scenario08"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_stable,
-          lag_value = 0,
-          "scenario08")
-make_gam("scenario08")
-get_lpi("scenario08")
+# how does positive covariation affect the LPI?
+# scenario3A: extreme decline, positive covariance, no lag, no process error
+# scenario3B: stable, positive covariance, no lag, no process error
+# scenario3C: growth, positive covariance, no lag, no process error
 
-# scenario 9: growth, positive covariance, no lag ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_increase,
-  lag_value = 0,
-  "scenario09"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_increase,
-          lag_value = 0,
-          "scenario09")
-make_gam("scenario09")
-get_lpi("scenario09")
+# is this finding robust to process error?
+# level 1: low process error
+# scenario3D: extreme decline, positive covariance, no lag, low process error
+# scenario3E: stable, positive covariance, no lag, low process error
+# scenario3F: growth, positive covariance, no lag, low process error
 
+# is this finding robust to process error?
+# level 2: high process error
+# scenario3G: extreme decline, positive covariance, no lag, high process error
+# scenario3H: stable, positive covariance, no lag, high process error
+# scenario3I: growth, positive covariance, no lag, high process error
 
-## SET C - lag-1 covariance from interactions ----------------------------------
+# scenarios 3J-3R: same levels, but with strong positive covariance
 
-## scenario 10: extreme decline, negative covariance, lag-1  ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_decline,
-  lag_value = 1,
-  "scenario10"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_decline,
-          lag_value = 0,
-          "scenario10")
-make_gam("scenario10")
-get_lpi("scenario10")
+sim_names <- paste0("scenario3", LETTERS[1:18])
+K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
+alphas <- rep(list(c(-0.1, -0.1), c(-0.2, -0.2)), each = 9)
+proc_error <- rep(rep(c(0, 0.1, 0.2), each = 3), 2)
 
+for(i in 1:length(sim_names)){
+  filename <- sim_names[[i]]
+  sim_mech(
+    n_pairs = pop_pairs, timesteps = steps,
+    N0i = 100, N0j = 100,
+    lambda_i = 1.5, lambda_j = 1.5,
+    alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+    process = proc_error[i], 
+    observation = obs,
+    K = K_scenarios[[i]],
+    lag_value = 0
+  )
+  make_true(n_pairs = pop_pairs, timesteps = steps,
+            N0i = 100, N0j = 100,
+            lambda_i = 1.5, lambda_j = 1.5,
+            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+            K = K_scenarios[[i]],
+            lag_value = 0)
+  make_gam(filename)
+  get_lpi(filename)
+}
 
-# scenario 11: stable, negative covariance, lag-1 ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_stable,
-  lag_value = 1,
-  "scenario11"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_stable,
-          lag_value = 1,
-          "scenario11")
-make_gam("scenario11")
-get_lpi("scenario11")
+## SET 4: LAG-1 negative covariance from interactions --------------------------
 
-# scenario 12: growth, negative covariance, lag-1 ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_increase,
-  lag_value = 1,
-  "scenario12"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_increase,
-          lag_value = 1,
-          "scenario12")
-make_gam("scenario12")
-get_lpi("scenario12")
+# how does lagged negative covariation affect the LPI?
+# scenario4A: extreme decline, negative covariance, 1 step lag, no process error
+# scenario4B: stable, negative covariance, 1 step lag, no process error
+# scenario4C: growth, negative covariance, 1 step lag, no process error
+
+# is this finding robust to process error?
+# level 1: low process error
+# scenario4D: extreme decline, negative covariance, 1 step lag, low process error
+# scenario4E: stable, negative covariance, 1 step lag, low process error
+# scenario4F: growth, negative covariance, 1 step lag, low process error
+
+# is this finding robust to process error?
+# level 2: high process error
+# scenario4G: extreme decline, negative covariance, 1 step lag, high process error
+# scenario4H: stable, negative covariance, 1 step lag, high process error
+# scenario4I: growth, negative covariance, 1 step lag, high process error
+
+# scenarios 4J-R: same levels, but with strong negative covariance
+
+sim_names <- paste0("scenario4", LETTERS[1:18])
+K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
+alphas <- rep(list(c(-0.1, 0.1), c(-0.2, 0.2)), each = 9)
+proc_error <- rep(rep(c(0, 0.1, 0.2), each = 3), 2)
+
+for(i in 1:length(sim_names)){
+  filename <- sim_names[[i]]
+  sim_mech(
+    n_pairs = pop_pairs, timesteps = steps,
+    N0i = 100, N0j = 100,
+    lambda_i = 1.5, lambda_j = 1.5,
+    alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+    process = proc_error[i], 
+    observation = obs,
+    K = K_scenarios[[i]],
+    lag_value = 1
+  )
+  make_true(n_pairs = pop_pairs, timesteps = steps,
+            N0i = 100, N0j = 100,
+            lambda_i = 1.5, lambda_j = 1.5,
+            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+            K = K_scenarios[[i]],
+            lag_value = 1)
+  make_gam(filename)
+  get_lpi(filename)
+}
 
 
-# scenario 13: decline, positive covariance, lag-1 ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here 
-  process = proc, observation = obs,
-  K = K_decline,
-  lag_value = 1,
-  "scenario13"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_decline,
-          lag_value = 1,
-          "scenario13")
-make_gam("scenario13")
-get_lpi("scenario13")
+## SET 5: LAG-1 positive covariance from interactions --------------------------
 
-# scenario 14: stable, positive covariance, lag-1 ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_stable,
-  lag_value = 1,
-  "scenario14"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_stable,
-          lag_value = 1,
-          "scenario14")
-make_gam("scenario14")
-get_lpi("scenario14")
+# how does lagged positive covariation affect the LPI?
+# scenario5A: extreme decline, positive covariance, 1 step lag, no process error
+# scenario5B: stable, positive covariance, 1 step lag, no process error
+# scenario5C: growth, positive covariance, 1 step lag, no process error
 
-# scenario 15: growth, positive covariance, lag-1 ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_increase,
-  lag_value = 1,
-  "scenario15"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_increase,
-          lag_value = 1,
-          "scenario15")
-make_gam("scenario15")
-get_lpi("scenario15")
+# is this finding robust to process error?
+# level 1: low process error
+# scenario5D: extreme decline, positive covariance, 1 step lag, low process error
+# scenario5E: stable, positive covariance, 1 step lag, low process error
+# scenario5F: growth, positive covariance, 1 step lag, low process error
 
+# is this finding robust to process error?
+# level 2: high process error
+# scenario5G: extreme decline, positive covariance, 1 step lag, high process error
+# scenario5H: stable, positive covariance, 1 step lag, high process error
+# scenario5I: growth, positive covariance, 1 step lag, high process error
 
-## SET C - lag-2 covariance from interactions ----------------------------------
+# scenarios 5J-R: same levels, but with strong positive covariance
 
-## scenario 16: extreme decline, negative covariance, lag-2  ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_decline,
-  lag_value = 2,
-  "scenario16"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_decline,
-          lag_value = 0,
-          "scenario16")
-make_gam("scenario16")
-get_lpi("scenario16")
+sim_names <- paste0("scenario5", LETTERS[1:18])
+K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
+alphas <- rep(list(c(-0.1, -0.1), c(-0.2, -0.2)), each = 9)
+proc_error <- rep(rep(c(0, 0.1, 0.2), each = 3), 2)
 
+for(i in 1:length(sim_names)){
+  filename <- sim_names[[i]]
+  sim_mech(
+    n_pairs = pop_pairs, timesteps = steps,
+    N0i = 100, N0j = 100,
+    lambda_i = 1.5, lambda_j = 1.5,
+    alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+    process = proc_error[i], 
+    observation = obs,
+    K = K_scenarios[[i]],
+    lag_value = 1
+  )
+  make_true(n_pairs = pop_pairs, timesteps = steps,
+            N0i = 100, N0j = 100,
+            lambda_i = 1.5, lambda_j = 1.5,
+            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+            K = K_scenarios[[i]],
+            lag_value = 1)
+  make_gam(filename)
+  get_lpi(filename)
+}
 
-# scenario 17: stable, negative covariance, lag-2 ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_stable,
-  lag_value = 2,
-  "scenario17"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_stable,
-          lag_value = 2,
-          "scenario17")
-make_gam("scenario17")
-get_lpi("scenario17")
+## SET 6: LAG-2 negative covariance from interactions --------------------------
 
-# scenario 18: growth, negative covariance, lag-2 ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_increase,
-  lag_value = 2,
-  "scenario18"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = -0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_increase,
-          lag_value = 2,
-          "scenario18")
-make_gam("scenario18")
-get_lpi("scenario18")
+# how does lagged negative covariation affect the LPI?
+# scenario6A: extreme decline, negative covariance, 2 step lag, no process error
+# scenario6B: stable, negative covariance, 2 step lag, no process error
+# scenario6C: growth, negative covariance, 2 step lag, no process error
+
+# is this finding robust to process error?
+# level 1: low process error
+# scenario6D: extreme decline, negative covariance, 2 step lag, low process error
+# scenario6E: stable, negative covariance, 2 step lag, low process error
+# scenario6F: growth, negative covariance, 2 step lag, low process error
+
+# is this finding robust to process error?
+# level 2: high process error
+# scenario6G: extreme decline, negative covariance, 2 step lag, high process error
+# scenario6H: stable, negative covariance, 2 step lag, high process error
+# scenario6I: growth, negative covariance, 2 step lag, high process error
+
+# scenarios 6J-R: same levels, but with strong negative covariance
+
+sim_names <- paste0("scenario6", LETTERS[1:18])
+K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
+alphas <- rep(list(c(-0.1, 0.1), c(-0.2, 0.2)), each = 9)
+proc_error <- rep(c(0, 0.1, 0.2), each = 6)
+
+for(i in 1:length(sim_names)){
+  filename <- sim_names[[i]]
+  sim_mech(
+    n_pairs = pop_pairs, timesteps = steps,
+    N0i = 100, N0j = 100,
+    lambda_i = 1.5, lambda_j = 1.5,
+    alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+    process = proc_error[i], 
+    observation = obs,
+    K = K_scenarios[[i]],
+    lag_value = 2
+  )
+  make_true(n_pairs = pop_pairs, timesteps = steps,
+            N0i = 100, N0j = 100,
+            lambda_i = 1.5, lambda_j = 1.5,
+            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+            K = K_scenarios[[i]],
+            lag_value = 2)
+  make_gam(filename)
+  get_lpi(filename)
+}
 
 
-# scenario 19: decline, positive covariance, lag-2 ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_decline,
-  lag_value = 2,
-  "scenario19"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_decline,
-          lag_value = 2,
-          "scenario19")
-make_gam("scenario19")
-get_lpi("scenario19")
+## SET 7: LAG-2 positive covariance from interactions ## -----------------------------------
 
-# scenario 20: stable, positive covariance, lag-2 ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_stable,
-  lag_value = 2,
-  "scenario20"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_stable,
-          lag_value = 2,
-          "scenario20")
-make_gam("scenario20")
-get_lpi("scenario20")
+# how does lagged positive covariation affect the LPI?
+# scenario7A: extreme decline, positive covariance, 2 step lag, no process error
+# scenario7B: stable, positive covariance, 2 step lag, no process error
+# scenario7C: growth, positive covariance, 2 step lag, no process error
 
-# scenario 21: growth, positive covariance, lag-2 ------
-sim_mech(
-  n_pairs = pop_pairs, timesteps = steps,
-  N0i = 100, N0j = 100,
-  lambda_i = 1.5, lambda_j = 1.5,
-  alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-  process = proc, observation = obs,
-  K = K_increase,
-  lag_value = 2,
-  "scenario21"
-)
-make_true(n_pairs = pop_pairs, timesteps = steps,
-          N0i = 100, N0j = 100,
-          lambda_i = 1.5, lambda_j = 1.5,
-          alpha_ij = 0.01, alpha_ji = 0.01, # covariance happens here - antagonistic interaction
-          K = K_increase,
-          lag_value = 2,
-          "scenario21")
-make_gam("scenario21")
-get_lpi("scenario21")
+# is this finding robust to process error?
+# level 1: low process error
+# scenario7D: extreme decline, positive covariance, 2 step lag, low process error
+# scenario7E: stable, positive covariance, 2 step lag, low process error
+# scenario7F: growth, positive covariance, 2 step lag, low process error
+
+# is this finding robust to process error?
+# level 2: high process error
+# scenario7G: extreme decline, positive covariance, 2 step lag, high process error
+# scenario7H: stable, positive covariance, 2 step lag, high process error
+# scenario7I: growth, positive covariance, 2 step lag, high process error
+
+# scenarios 7J-R: same levels, but with strong positive covariance
+
+sim_names <- paste0("scenario7", LETTERS[1:18])
+K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
+alphas <- rep(list(c(-0.1, -0.1), c(-0.2, -0.2)), each = 9)
+proc_error <- rep(c(0, 0.1, 0.2), each = 6)
+
+for(i in 1:length(sim_names)){
+  filename <- sim_names[[i]]
+  sim_mech(
+    n_pairs = pop_pairs, timesteps = steps,
+    N0i = 100, N0j = 100,
+    lambda_i = 1.5, lambda_j = 1.5,
+    alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+    process = proc_error[i], 
+    observation = obs,
+    K = K_scenarios[[i]],
+    lag_value = 2
+  )
+  make_true(n_pairs = pop_pairs, timesteps = steps,
+            N0i = 100, N0j = 100,
+            lambda_i = 1.5, lambda_j = 1.5,
+            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+            K = K_scenarios[[i]],
+            lag_value = 2)
+  make_gam(filename)
+  get_lpi(filename)
+}

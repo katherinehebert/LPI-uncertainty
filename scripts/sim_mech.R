@@ -11,7 +11,7 @@ sim_mech <- function(
   observation = obs,
   K,
   lag_value,
-  simname,
+  simname = filename,
   save_figs = TRUE){
   
   ## arguments: ## ----
@@ -36,12 +36,19 @@ sim_mech <- function(
   r_j = matrix(lambda_j, nrow = n_pairs, ncol = timesteps) 
   
   # add process error to growth rates
-  process_error = rnorm(n = n_pairs*timesteps, mean = process, sd = process/10)
-  r_i_error = r_i + process_error
-  r_j_error = r_j + process_error
-  # observation error
-  obs_i_error = matrix(rnorm(n = n_pairs*timesteps, mean = observation, sd = observation/10), nrow = n_pairs, ncol = timesteps)
-  obs_j_error = matrix(rnorm(n = n_pairs*timesteps, mean = observation, sd = observation/10), nrow = n_pairs, ncol = timesteps)
+  
+    # set i
+    set.seed(22)
+    process_error_i = rnorm(n = n_pairs*timesteps, mean = process, sd = process/10)
+    r_i_error = r_i + process_error_i
+    # observation error
+    obs_i_error = matrix(rnorm(n = n_pairs*timesteps, mean = observation, sd = observation/10), nrow = n_pairs, ncol = timesteps)
+    
+    # set j
+    set.seed(2)
+    process_error_j = rnorm(n = n_pairs*timesteps, mean = process, sd = process/10)
+    r_j_error = r_j + process_error_j
+    obs_j_error = matrix(rnorm(n = n_pairs*timesteps, mean = observation, sd = observation/10), nrow = n_pairs, ncol = timesteps)
   
   # run simulation --------------------------------------------------------------- 
   
@@ -157,7 +164,7 @@ sim_mech <- function(
                                alpha_ji,
                                observation,
                                process,
-                               0)
+                               lag_value\)
   )
   saveRDS(params, paste0("simulations/", simname, "_params.RDS"))
   
