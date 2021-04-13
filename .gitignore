@@ -49,3 +49,8 @@ po/*~
 scripts/drafts/
 data_raw/LPR2020data_public.csv
 .DS_Store
+
+# outputs that aren't needed on github
+figures/
+outputs/
+simulations/
