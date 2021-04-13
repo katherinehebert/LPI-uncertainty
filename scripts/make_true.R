@@ -7,6 +7,12 @@
 # K = K_decline
 # lag_value = 0
 # filename = "test"
+# n_pairs = 10 
+# timesteps = 10
+# N0i = 100
+# N0j = 100 
+# lambda_i = 1.5
+# lambda_j = 1.5
 
 make_true <- function(
   n_pairs = 10, 

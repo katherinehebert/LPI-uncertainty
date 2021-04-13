@@ -164,7 +164,7 @@ sim_mech <- function(
                                alpha_ji,
                                observation,
                                process,
-                               lag_value\)
+                               lag_value)
   )
   saveRDS(params, paste0("simulations/", simname, "_params.RDS"))
   

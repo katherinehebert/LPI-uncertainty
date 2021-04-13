@@ -17,9 +17,9 @@ steps = 10
 obs = 5
 
 ## CARRYING CAPACITY SCENARIOS -------------------------------------------------
-K_increase = 100 + 5*c(0:9)
+K_increase = 100 + 4*c(0:9)
 K_stable = rep(100, 10)
-K_decline = 100 - 5*c(0:9)
+K_decline = 100 - 4*c(0:9)
 # plot these!
 K_plot <- data.frame(
   time = 1:steps,
@@ -85,19 +85,19 @@ for(i in 1:length(sim_names)){
 ## SET 2: negative covariance from interactions --------------------------------
 
 # how does negative covariation affect the LPI?
-# scenario2A: extreme decline, negative covariance, no lag, no process error
+# scenario2A: decline, negative covariance, no lag, no process error
 # scenario2B: stable, negative covariance, no lag, no process error
 # scenario2C: growth, negative covariance, no lag, no process error
 
 # is this finding robust to process error?
 # level 1: low process error
-# scenario2D: extreme decline, negative covariance, no lag, low process error
+# scenario2D: decline, negative covariance, no lag, low process error
 # scenario2E: stable, negative covariance, no lag, low process error
 # scenario2F: growth, negative covariance, no lag, low process error
 
 # is this finding robust to process error?
 # level 2: high process error
-# scenario2G: extreme decline, negative covariance, no lag, high process error
+# scenario2G: decline, negative covariance, no lag, high process error
 # scenario2H: stable, negative covariance, no lag, high process error
 # scenario2I: growth, negative covariance, no lag, high process error
 
@@ -153,9 +153,7 @@ for(i in 1:length(sim_names)){
 # scenarios 3J-3R: same levels, but with strong positive covariance
 
 sim_names <- paste0("scenario3", LETTERS[1:18])
-K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
 alphas <- rep(list(c(-0.1, -0.1), c(-0.2, -0.2)), each = 9)
-proc_error <- rep(rep(c(0, 0.1, 0.2), each = 3), 2)
 
 for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
@@ -163,7 +161,8 @@ for(i in 1:length(sim_names)){
     n_pairs = pop_pairs, timesteps = steps,
     N0i = 100, N0j = 100,
     lambda_i = 1.5, lambda_j = 1.5,
-    alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+    alpha_ij = alphas[[i]][1], 
+    alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
     process = proc_error[i], 
     observation = obs,
     K = K_scenarios[[i]],
@@ -172,7 +171,8 @@ for(i in 1:length(sim_names)){
   make_true(n_pairs = pop_pairs, timesteps = steps,
             N0i = 100, N0j = 100,
             lambda_i = 1.5, lambda_j = 1.5,
-            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+            alpha_ij = alphas[[i]][1], 
+            alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
             K = K_scenarios[[i]],
             lag_value = 0)
   make_gam(filename)
@@ -203,7 +203,6 @@ for(i in 1:length(sim_names)){
 sim_names <- paste0("scenario4", LETTERS[1:18])
 K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
 alphas <- rep(list(c(-0.1, 0.1), c(-0.2, 0.2)), each = 9)
-proc_error <- rep(rep(c(0, 0.1, 0.2), each = 3), 2)
 
 for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
@@ -252,7 +251,6 @@ for(i in 1:length(sim_names)){
 sim_names <- paste0("scenario5", LETTERS[1:18])
 K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
 alphas <- rep(list(c(-0.1, -0.1), c(-0.2, -0.2)), each = 9)
-proc_error <- rep(rep(c(0, 0.1, 0.2), each = 3), 2)
 
 for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
@@ -300,7 +298,6 @@ for(i in 1:length(sim_names)){
 sim_names <- paste0("scenario6", LETTERS[1:18])
 K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
 alphas <- rep(list(c(-0.1, 0.1), c(-0.2, 0.2)), each = 9)
-proc_error <- rep(c(0, 0.1, 0.2), each = 6)
 
 for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
@@ -349,7 +346,6 @@ for(i in 1:length(sim_names)){
 sim_names <- paste0("scenario7", LETTERS[1:18])
 K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
 alphas <- rep(list(c(-0.1, -0.1), c(-0.2, -0.2)), each = 9)
-proc_error <- rep(c(0, 0.1, 0.2), each = 6)
 
 for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]

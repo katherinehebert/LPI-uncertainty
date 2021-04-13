@@ -30,8 +30,8 @@ K_scenarios$direction[which(K_scenarios$scenario %like% 'B|E|H|K|N|Q')] <- "stab
 K_scenarios$direction[which(K_scenarios$scenario %like% 'C|F|I|L|O|R')] <- "growth"
 
 # associate lag with the scenarios
-# params$Lag[which(params$scenario %like% 'scenario4|scenario5')] <- "1"
-# params$Lag[which(params$scenario %like% 'scenario6|scenario7')] <- "2"
+params$Lag[which(params$scenario %like% 'scenario4|scenario5')] <- "1"
+params$Lag[which(params$scenario %like% 'scenario6|scenario7')] <- "2"
 
 # join all tables together
 df <- dplyr::left_join(lpi, K_scenarios) %>% dplyr::left_join(params)
@@ -55,7 +55,7 @@ colnames(df)[12] <- "lambda"
 colnames(df)[13] <- "interaction"
 
 ### TEMPORARY until simulation is fixed for 3M and 5M onwards
-df <- df[-which(df$scenario %in% c(paste0("scenario3", LETTERS[13:18]), paste0("scenario5", LETTERS[13:18]))),]
+#df <- df[-which(df$scenario %in% c(paste0("scenario3", LETTERS[13:18]), paste0("scenario5", LETTERS[13:18]))),]
 
 # save to file
 saveRDS(df, "outputs/all_results.RDS")
