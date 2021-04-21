@@ -63,11 +63,13 @@ sim_mech <- function(
     # population i
     temp_i = Ni[,t]*(1 + r_i_error[,t]*(1 - (Ni[,t] + alpha_ij*Nj[,t])/K[t])) + obs_i_error[,t]
     temp_i[which(is.na(temp_i))] <- 0
+    temp_i[which(temp_i < 0)] <- 0
     Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
     
     # population j
     temp_j = Nj[,t]*(1 + r_j_error[,t]*(1 - (Nj[,t] + alpha_ji*Ni[,t])/K[t])) + obs_j_error[,t]
     temp_j[which(is.na(temp_j))] <- 0
+    temp_j[which(temp_j < 0)] <- 0
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
   }
 
@@ -79,6 +81,7 @@ sim_mech <- function(
       # population j
       temp_j = Nj[,t]*(1 + r_j_error[,t]*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t])) + obs_j_error[,t]
       temp_j[which(is.na(temp_j))] <- 0
+      temp_j[which(temp_j < 0)] <- 0
       #print(temp_j)
       Nj <- cbind(Nj, temp_j)
     }
@@ -110,6 +113,7 @@ sim_mech <- function(
   }
   # bind together
   N = rbind(pops_long(Ni, set_id = "i"), pops_long(Nj, set_id = "j"))
+  
   
   if(save_figs == TRUE){
     
