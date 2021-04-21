@@ -3,12 +3,14 @@ title: "Accuracy and precision of the LPI"
 output:
   html_document:
     toc: yes
-    toc_depth: 3
+    toc_depth: 1
     toc_float:
       collapsed: no
       smooth_scroll: no
     number_sections: yes
     theme: lumen
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -16,6 +18,8 @@ output:
 require(kableExtra)
 require(ggplot2)
 require(patchwork)
+require(dplyr)
+require(tidyselect)
 
 # chunk params
 knitr::opts_chunk$set(echo = FALSE, 
@@ -24,104 +28,266 @@ knitr::opts_chunk$set(echo = FALSE,
                       fig.height = 3)
 
 # set ggplot theme
-theme_set(ggpubr::theme_pubr())
+theme_set(theme_linedraw())
+format_lpiplots <- list(
+  theme(legend.position = "none"),
+  labs(x = "", y = "LPI"),
+  scale_x_continuous(breaks = seq(from = 0, to = 10, by = 2)))
 
 # load results
 df <- readRDS("~/Documents/GitHub/LPI-sensitivity/outputs/all_results.RDS")
 ```
 
-# Sensitivity to direction of population change
+```{r}
+df$Process_error <- factor(df$Process_error, levels = c("0", "0.1", "0.2"))
+df$interaction <- factor(df$interaction, levels = c("0", "-0.1", "-0.2", "0.1", "0.2"))
+```
 
-**(1) How does the direction of change influence the accuracy and precision of the Living Planet Index?**
+```{r}
+accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "direction") {
+  ggplot(df_subset,
+       aes(x = get(comparison_variable), 
+           y = accuracy_boot, 
+           group = scenario,
+           col = get(colour_variable))) +
+  geom_violin(aes(group = scenario, fill = get(colour_variable)), 
+              lwd = 0, alpha = .1) +
+  stat_summary(fun.data = mean_se, 
+               fun.args = list(mult=1),
+               geom = "pointrange", 
+               position = position_dodge(width = .5)) + 
+  labs(x = "", y = "Difference from true LPI (%)", title = "Accuracy") +
+  theme(legend.position = "none")
+}
+
+precision_plot <- function(df_subset, comparison_variable, colour_variable = "direction"){
+  ggplot(df_subset,
+       aes(x = get(comparison_variable), 
+           y = interval_width, 
+           group = scenario,
+           col = get(colour_variable))) +
+  geom_violin(aes(group = scenario, fill = get(colour_variable)), 
+              lwd = 0, alpha = .1) +
+  stat_summary(fun.data = mean_se, 
+               fun.args = list(mult=1),
+               geom = "pointrange", 
+               position = position_dodge(width = .5)) + 
+  labs(x = "", y = "CI Width / LPI value", title = "Precision") +
+  theme(legend.position = "none")
+}
+```
+
+## Mechanistic simulations of population dynamics
+
+We simulated antagonistic population dynamics using a discrete Lotka-Volterra competition model, where each population's growth rate is influenced by the fluctuations in a competitor population.
+Pairs of populations were simulated according to:
+
+```{=tex}
+\begin{equation}
+N_i(t+1) = N_i(t) + \lambda_i * N_i(t)
+\end{equation}
+```
+where $N_i$ is the size of population $i$, $t$ is each time step, and $\lambda$ is the true growth rate of population $i$.
+The true growth rate ($\lambda$) is determined by:
+
+```{=tex}
+\begin{equation}
+\lambda_i = r*(1-\frac{(N_i(t) + \alpha_{ji}N_j(t))}{K_i})
+\end{equation}
+```
+where $r$ is population $i$'s maximum growth rate, $\alpha_{ji}$ is the interaction effect of population $j$ on population $i$, $N_j$ is the size of population $j$, and $K_i$ is the carrying capacity of population $i$.
+
+To test index sensitivity to error, we introduced process and observation error into the generated population time series.
+
+```{r params-table}
+#### TO UPDATE!! ####
+
+# number of population pairs to generate
+n_pairs = 10
+# number of generations
+steps = 10 
+
+# initial population sizes
+N0i = 100
+N0j = 100
+# growth rate
+r_i = matrix(1, nrow = n_pairs, ncol = steps)
+r_j = matrix(1, nrow = n_pairs, ncol = steps)
+# interaction coefficients (competition)
+alpha_ij = 0.2
+alpha_ji = 0.1
+
+## make table ##
+params <- data.frame("i" = c(N0i, r_i[1,1], alpha_ji, 
+                             paste0("+/-", 0.1), 
+                             paste0("+/-", N0i/10)), 
+                     "j" = c(N0j, r_j[1,1], alpha_ji, 
+                             paste0("+/-", 0.1), 
+                             paste0("+/-", N0j/10)),
+                     row.names = c("Initial size (N0)",
+                                   "Maximum growth rate (r)",
+                                   "Interaction effect (alpha)",
+                                   "Observation error",
+                                   "Process error"))
+kbl(params, booktabs = TRUE, caption = "Simulation parameters") %>%
+  kable_styling(position = "center", latex_options = "hold_position")
+```
+
+### Biodiversity change scenarios
+
+#### Direction of change
+
+To test index sensitivity to direction of change, we generated three scenarios of population-level biodiversity change.
+We varied carrying capacity through time to drive populations to (1) decline in response to decreasing carrying capacity, representing situations where habitats are lost or altered, (2) remain stable in response to constant carrying capacity, where habitats are left untouched, or (3) increase in response to increasing carrying capacity, where habitat quality and/or availability increases through time.
+In each scenario, carrying capacity begins at $K = 100$ and each population's initial size is exactly at this carrying capacity ($N_0 = 100$). 
+
+```{r, fig.cap = "Carrying capacity trends used to generate the biodiversity change scenarios."}
+## CARRYING CAPACITY SCENARIOS -------------------------------------------------
+K_increase = 100 + 4*c(0:9)
+K_stable = rep(100, 10)
+K_decline = 100 - 4*c(0:9)
+# plot these!
+K_plot <- data.frame(
+  time = 1:steps,
+  scenario = factor(c(rep("increase", steps), rep("stable", steps), rep("decline", steps)),
+                    levels = c("increase", "stable", "decline")),
+  K = c(K_increase, K_stable, K_decline)
+)
+ggplot(K_plot) +
+  geom_line(aes(x = time, y = K, col = scenario)) +
+  labs(x = "", y = "Carrying capacity (K)", col = "Biodiversity change\n scenario") +
+  theme(legend.position = "right") +
+  scale_x_continuous(breaks = c(1:10))
+```
+
+#### Covariance
+
+To test whether the LPI is sensitive to lags in the covariance between populations, we then generated two levels of lag in the interaction effect dictating how populations covary through time.
+The first level was lag-1, where the interaction effect of populations $i$ on populations $j$ was dependent on the abundance of populations $i$ at the previous time step ($t-1$).
+The second level was lag-2, where this interaction effect depended instead on the abundance of populations $i$ from two time steps ago ($t-2$).
+
+## Measuring index performance
+
+For each biodiversity change scenario, index performance was measured as the accuracy and precision of the calculated Living Planet Index when compared to the true biodiversity change trend.
+This true LPI trend was obtained by calculating the index values through time based on a population generated from the same parameters we used to generate populations for each scenario, without any added process error.
+We measured accuracy as the difference between the calculated LPI and true LPI trend at each time step, expressed as a percentage of the true LPI value at each step to allow for comparison between scenarios:
+
+$$accuracy = \frac{LPI_{calculated} - LPI_{true}}{LPI_{true}} * 100% $$ 
+
+As a first metric of precision, we evaluated whether the true LPI trend fell within the 95% confidence interval around the calculated LPI trend obtained from bootstrap resampling at each time step.
+As a second precision metric, we measured precision as the width of the 95% confidence interval expressed as a percentage of the calculated LPI value at each step to allow comparison between scenarios:
+
+$$ precision = \frac{LPI_{upper CI} - LPI_{lowerCI}}{LPI_{calculated}} * 100% $$
+
+# Results
+
+## Sensitivity to direction of population change
+
+### How does the direction of change influence the accuracy and precision of the Living Planet Index?
+
+A look at how the true and calculated LPI trends look for each direction of biodiversity change, with different levels of process error:
 
 ```{r q1-trend}
-ggplot(dplyr::filter(df, Lag == "0" & interaction == "0"),
-       aes(x = time, group = scenario, col = direction)) +
+# this was scenario 1, so filter for just that one
+df_sc1 <- dplyr::filter(df, scenario %in% paste0("scenario1", LETTERS[1:9]))
+# plot the scenarios
+ggplot(df_sc1, 
+       aes(x = time, col = direction, group = scenario)) +
+  geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
+                   fill = direction), alpha = .3, lwd = 0) +
+  geom_line(aes(y = LPI_true), lty = 2, lwd = .2, col = "grey") +
   geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
-  facet_wrap(~direction) +
-  theme_linedraw() + 
-  theme(panel.grid = element_blank(),
-        legend.position = "none")
+  facet_wrap(~ Process_error, labeller = label_both) +
+  theme_bw() + format_lpiplots
 ```
 
+A look at how accuracy and precision are affected by direction of change:
 
-```{r q1-accuracy}
-a <- ggplot(dplyr::filter(df, Lag == "0" & interaction == "0"), 
-       aes(y = direction, x = accuracy_boot, col = direction)) +
-  geom_jitter(height = .1, alpha = .3, size = 2) +
-  stat_summary(fun.data = mean_se, 
-               fun.args = list(mult=1),
-               geom = "pointrange", 
-               position = position_dodge(width = .5)) + 
-  labs(y = "", x = "Accuracy (% difference in LPI)") +
-  geom_vline(xintercept = 0, lty = 2, lwd = .2) +
-  coord_cartesian(xlim = c(-20,20)) +
-  theme(legend.position = "none")
-b <- ggplot(dplyr::filter(df, Lag == "0" & interaction == "0"), 
-       aes(y = direction, x = interval_width, col = direction)) +
-  geom_jitter(height = .1, alpha = .3, size = 2) +
-  stat_summary(fun.data = mean_se, 
-               fun.args = list(mult=1),
-               geom = "pointrange", 
-               position = position_dodge(width = .5)) + 
-  labs(y = "", x = "Precision (CI Width / LPI value)") +
-  coord_cartesian(xlim = c(0,10)) +
-  theme(legend.position = "none")
+```{r q1, fig.cap = "Process error does not seem to affect the accuracy or precision of these trends, so for simplicity this plot only includes the scenario without any process error."}
+a <- accuracy_plot(filter(df_sc1, Process_error == "0"), "direction")
+b <- precision_plot(filter(df_sc1, Process_error == "0"), "direction")
 a + b
 ```
 
-# Sensitivity to covariation between populations
+```{r}
+# calculate mean accuracy and mean precision with standard error
+se <- function(x) sqrt(var(x)/length(x))
+df_sc1 %>% filter(Process_error == "0") %>%
+  group_by(direction) %>%
+  summarise(mean_accuracy = mean(accuracy_boot),
+            se_accuracy = se(accuracy_boot),
+            mean_precision = mean(interval_width),
+            se_precision = se(interval_width)) %>%
+  kableExtra::kable()
+```
 
-**(2) How does covariation influence the accuracy and precision of the Living Planet Index?**
 
-```{r q2-trend}
-ggplot(dplyr::filter(df, Lag == "0"),
+Direction seems to impact the accuracy and precision of the Living Planet Index, where declining trends lead to an overestimation of the LPI with much lower precision.
+
+
+## Sensitivity to covariation between populations
+
+To test whether the LPI is sensitive to covariance between populations, we generated biodiversity change scenarios with two types of interaction effects ($\alpha$) between populations.
+For the first scenario, we set a negative interaction effect to represent an antagonistic interaction between populations $i$ and $j$, such as a competitive or predator-prey relationship, which causes negative covariance.
+The second scenario was based on a positive interaction effect of the same magnitude to replicate a positive interaction between populations $i$ and $j$, and therefore positive covariance.
+Both of these interactions effects were immediate, meaning there was no time lag in the covariance in the populations' growth rates. 
+
+### How does covariance (i.e. interactions) influence the accuracy and precision of the Living Planet Index?
+
+A look at how the true and calculated LPI trends look for each direction of biodiversity change, with different levels of covariance:
+
+```{r q2-trend, fig.show="hold", out.width="50%", out.width = "100%", fig.height=7}
+df_sc2 <- df[grepl("^scenario2", df$scenario), ]
+df_sc3 <- df[grepl("^scenario3", df$scenario), ]
+a <- ggplot(df_sc2,
        aes(x = time, group = scenario, col = direction)) +
   geom_line(aes(y = LPI_boot)) +
   geom_line(aes(y = LPI_true), lty = 2) +
-  facet_wrap(~interaction) +
-  theme_linedraw() + 
-  theme(panel.grid = element_blank(),
-        legend.position = "none")
-```
-
-```{r q2}
-a <- ggplot(dplyr::filter(df, Lag == "0" & direction == "stable"), 
-       aes(y = interaction, x = accuracy_boot, col = interaction)) +
-  geom_jitter(alpha = .3, size = 2, height = .1) +
-  stat_summary(fun.data = mean_se, fun.args = list(mult=1),
-               geom = "pointrange", position = position_dodge(width = .5)) + 
-  labs(y = "Interaction effect", x = "Accuracy (% difference in LPI)") +
-  theme(legend.position = "none") +
-  scale_color_brewer(palette = "Dark2") +
-  geom_vline(xintercept = 0, lty = 2, lwd = .2) +
-  coord_cartesian(xlim = c(-10,10))
-b <- ggplot(dplyr::filter(df, Lag == "0" & direction == "stable"), 
-       aes(y = interaction, x = interval_width, col = interaction)) +
-  geom_jitter(height = .1, alpha = .3, size = 2) +
-  stat_summary(fun.data = mean_se, fun.args = list(mult=1),
-               geom = "pointrange", position = position_dodge(width = .5)) + 
-  labs(y = "", x = "Precision (CI width / LPI)") +
-  theme(legend.position = "none") +
-  scale_color_brewer(palette = "Dark2") +
-  coord_cartesian(xlim = c(0, 10)) 
+  facet_grid(Process_error~interaction, labeller = label_both) +
+  theme_bw() + format_lpiplots +
+  labs(title = "Predation (negative covariation)")
+b <- ggplot(df_sc3,
+       aes(x = time, group = scenario, col = direction)) +
+  geom_line(aes(y = LPI_boot)) +
+  geom_line(aes(y = LPI_true), lty = 2) +
+  facet_grid(Process_error~interaction, labeller = label_both) +
+  theme_bw() + format_lpiplots +
+  labs(title = "Competition (positive covariation)")
 a + b
 ```
+
+```{r q2, fig.height=7}
+df_cov <- rbind(df_sc2, df_sc3)
+a <- accuracy_plot(df_cov, "interaction") + 
+  facet_wrap(~Process_error, dir = "v", labeller = label_both)
+b <- precision_plot(df_cov, "interaction")+ 
+  facet_wrap(~Process_error, dir = "v", labeller = label_both)
+a + b
+```
+
+```{r}
+df_cov %>% filter(Process_error == "0") %>%
+  group_by(direction, interaction) %>%
+  summarise(mean_accuracy = mean(accuracy_boot),
+            se_accuracy = se(accuracy_boot),
+            mean_precision = mean(interval_width),
+            se_precision = se(interval_width)) %>%
+  kableExtra::kable()
+```
+
 
 # Sensitivity to lag in covariation
 
 **(3) How does lagged covariation influence the accuracy and precision of the Living Planet Index?**
 
 ```{r q3-trend, fig.height=7}
-ggplot(dplyr::filter(df, interaction != "0"),
+# without process error
+ggplot(dplyr::filter(df, Lag %in% c("1", "2") & Process_error == "0"),
        aes(x = time, group = scenario, col = direction)) +
   geom_line(aes(y = LPI_boot)) +
   geom_line(aes(y = LPI_true), lty = 2) +
-  facet_grid(interaction~Lag) +
-  theme_linedraw() + 
-  theme(panel.grid = element_blank(),
-        legend.position = "none")
+  facet_grid(interaction~Lag, labeller = label_both) +
+  theme_bw() + format_lpiplots
 ```
 
 ```{r q3,fig.pos="hold"}
@@ -135,11 +301,11 @@ a <- ggplot(dplyr::filter(df, interaction != "0"),
   geom_vline(xintercept = 0, lty = 2, lwd = .2) +
   facet_wrap(~direction) + 
   theme_linedraw() +
-  scale_colour_manual(values = c("#1b9e77", "#7570b3")) +
+ # scale_colour_manual(values = c("#1b9e77", "#7570b3")) +
   coord_cartesian(xlim = c(-30,30)) +
   coord_flip()
 
-b <- ggplot(dplyr::filter(df, interaction != "0"), 
+b <- ggplot(filter(df, interaction != "0"), 
             aes(y = Lag, x = interval_width, col = interaction)) +
   stat_summary(fun.data = mean_se, 
                fun.args = list(mult=1),
@@ -148,7 +314,7 @@ b <- ggplot(dplyr::filter(df, interaction != "0"),
   labs(y = "Lag", x = "Precision (CI width / LPI)") +
   facet_wrap(~direction) + 
   theme_linedraw() +
-  scale_colour_manual(values = c("#1b9e77", "#7570b3")) +
+  #scale_colour_manual(values = c("#1b9e77", "#7570b3")) +
   coord_cartesian(xlim = c(0, 10)) +
   coord_flip()
 a
