@@ -79,6 +79,8 @@ mean_uncertainty <- cbind(unlist(mean_uncertainty), unlist(sd_uncertainty))
 colnames(mean_uncertainty) <- c("mean_uncertainty", "sd_uncertainty")
 # attach to df
 df <- cbind(df, mean_uncertainty)
+# calculate difference betwee the expected interval width and the bootstrapped one
+df$interval_diff <- (df$interval_width-df$mean_uncertainty)/df$LPI_boot
 
 # format df columns for plotting
 df$Lag <- factor(df$Lag, levels = c("0", "1", "2"))
