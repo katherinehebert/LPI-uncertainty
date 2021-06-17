@@ -67,8 +67,8 @@ accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "dir
   labs(x = "", 
        y = "Difference from true LPI (%)", 
        title = "Accuracy", col = colour_variable) +
-  theme(legend.position = "bottom") +
-    coord_cartesian(ylim = c(-10,120))
+  theme(legend.position = "bottom") #+
+    #coord_cartesian(ylim = c(-10,120))
 }
 
 precision_plot <- function(df_subset, comparison_variable, colour_variable = "direction"){
@@ -193,13 +193,13 @@ To test whether the LPI is sensitive to lags in the covariance between populatio
 For each biodiversity change scenario, index sensitivity was measured as the accuracy and precision of the calculated Living Planet Index when compared to the true biodiversity change trend. This true LPI trend was obtained by calculating the index values through time based on a population generated from the same parameters we used to generate populations for each scenario, without any added process error.
 
 
-We measured **accuracy** as the difference between the calculated LPI and true LPI trend at each time step, expressed as a percentage of the true LPI value at each step to allow for comparison between scenarios:
+We measured **accuracy** as the difference between the calculated LPI and true LPI trend at each time step:
 
-$$accuracy = \frac{LPI_{calculated} - LPI_{true}}{LPI_{true}} * 100% $$ 
+$$accuracy = LPI_{calculated} - LPI_{true}$$ 
 
-As a first metric of **precision**, we evaluated whether the true LPI trend fell within the 95% confidence interval around the calculated LPI trend obtained from bootstrap resampling at each time step. As a second precision metric, we measured precision as the difference between the expected uncertainty interval and the width of the 95% confidence interval expressed as a percentage of the calculated LPI value at each step to allow comparison between scenarios. The expected uncertainty interval is determined based on the process and observation errors introduced into the simulated population trends. I calculated each population's growth rate with and without introduced error, and took the difference between the two to get a measure of the total introduced uncertainty in the growth rates. Then, I converted the difference between these growth rates to the same scale as the LPI:
+As a first metric of **precision**, we evaluated whether the true LPI trend fell within the 95% confidence interval around the calculated LPI trend obtained from bootstrap resampling at each time step. As a second precision metric, we measured precision as the difference between the expected uncertainty interval and the width of the 95% confidence interval. The expected uncertainty interval is determined based on the process and observation errors introduced into the simulated population trends. I calculated each population's growth rate with and without introduced error, and took the difference between the two to get a measure of the total introduced uncertainty in the growth rates. Then, I converted this uncertainty to the same scale as the LPI:
 
-$$ precision = \frac{LPI_{CIwidth} - LPI_{uncertainty}}{LPI_{calculated}} * 100% $$
+$$ precision = LPI_{CIwidth} - LPI_{uncertainty} $$
 
 ***
 
@@ -268,8 +268,7 @@ ggplot(dplyr::filter(df_sc1, Process_error == "0.2"),
 a <- accuracy_plot(filter(df_sc1, Process_error == "0"), "direction") + 
   theme(legend.position = "none")
 b <- precision_plot(filter(df_sc1, Process_error == "0"), "direction") + 
-  theme(legend.position = "none") +
-  coord_cartesian(ylim = c(-1, 1))
+  theme(legend.position = "none") #+ coord_cartesian(ylim = c(-1, 1))
 a + b
 ```
 
@@ -279,8 +278,7 @@ a + b
 a <- accuracy_plot(filter(df_sc1, Process_error == "0.1"), "direction") + 
   theme(legend.position = "none")
 b <- precision_plot(filter(df_sc1, Process_error == "0.1"), "direction") + 
-  theme(legend.position = "none") +
-  coord_cartesian(ylim = c(-1, 1))
+  theme(legend.position = "none") # + coord_cartesian(ylim = c(-1, 1))
 a + b
 ```
 
@@ -290,8 +288,7 @@ a + b
 a <- accuracy_plot(filter(df_sc1, Process_error == "0.2"), "direction") + 
   theme(legend.position = "none")
 b <- precision_plot(filter(df_sc1, Process_error == "0.2"), "direction") + 
-  theme(legend.position = "none") +
-  coord_cartesian(ylim = c(-1, 1))
+  theme(legend.position = "none") #+coord_cartesian(ylim = c(-1, 1))
 a + b
 ```
 
@@ -423,8 +420,8 @@ a / b
 ```{r, fig.cap = "LPI sensitivity to direction of change and covariance.", fig.height = 4}
 df_temp <- dplyr::filter(df_cov, Process_error == "0") 
 a <- accuracy_plot(df_temp, comparison_variable = "interaction")
-b <- precision_plot(df_temp, comparison_variable = "interaction") +
-  coord_cartesian(ylim = c(-2,28))
+b <- precision_plot(df_temp, comparison_variable = "interaction") #+
+  #coord_cartesian(ylim = c(-2,28))
 a + b
 ```
 
@@ -433,8 +430,8 @@ a + b
 ```{r, fig.cap = "LPI sensitivity to direction of change and covariance.", fig.height = 4}
 df_temp <- dplyr::filter(df_cov, Process_error == "0.1") 
 a <- accuracy_plot(df_temp, comparison_variable = "interaction")
-b <- precision_plot(df_temp, comparison_variable = "interaction") +
-  coord_cartesian(ylim = c(-2,28))
+b <- precision_plot(df_temp, comparison_variable = "interaction")# +
+  #coord_cartesian(ylim = c(-2,28))
 a + b
 ```
 
@@ -443,8 +440,8 @@ a + b
 ```{r, fig.cap = "LPI sensitivity to direction of change and covariance.", fig.height = 4}
 df_temp <- dplyr::filter(df_cov, Process_error == "0.2") 
 a <- accuracy_plot(df_temp, comparison_variable = "interaction")
-b <- precision_plot(df_temp, comparison_variable = "interaction") +
-  coord_cartesian(ylim = c(-2,28))
+b <- precision_plot(df_temp, comparison_variable = "interaction")# +
+  #coord_cartesian(ylim = c(-2,28))
 a + b
 ```
 
@@ -592,7 +589,7 @@ b <- precision_plot(dplyr::filter(df_lag, Process_error == "0"),
                    colour_variable = "direction") + 
                    facet_wrap(~interaction) + 
   labs(x = "Lag") +
-  coord_cartesian(ylim = c(-2,30)) +
+  #coord_cartesian(ylim = c(-2,30)) +
   theme(legend.position = "top") 
 a / b
 ```
@@ -609,7 +606,7 @@ b <- precision_plot(dplyr::filter(df_lag, Process_error == "0.1"),
                    comparison_variable = "Lag") + 
                     facet_wrap(~interaction) + 
   labs(x = "Lag") +
-  coord_cartesian(ylim = c(-2,30)) +
+  #coord_cartesian(ylim = c(-2,30)) +
   theme(legend.position = "top")
 a / b
 ```
@@ -627,7 +624,7 @@ b <- precision_plot(dplyr::filter(df_lag, Process_error == "0.2"),
                    comparison_variable = "Lag") + 
                     facet_wrap(~interaction) + 
   labs(x = "Lag") +
-  coord_cartesian(ylim = c(-2,30)) +
+  #coord_cartesian(ylim = c(-2,30)) +
   theme(legend.position = "top") 
 a / b
 ```
