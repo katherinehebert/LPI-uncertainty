@@ -268,7 +268,7 @@ ggplot(dplyr::filter(df_sc1, Process_error == "0.2"),
 a <- accuracy_plot(filter(df_sc1, Process_error == "0"), "direction") + 
   theme(legend.position = "none")
 b <- precision_plot(filter(df_sc1, Process_error == "0"), "direction") + 
-  theme(legend.position = "none") #+ coord_cartesian(ylim = c(-1, 1))
+  theme(legend.position = "none") + coord_cartesian(ylim = c(-1, 1))
 a + b
 ```
 
@@ -278,7 +278,7 @@ a + b
 a <- accuracy_plot(filter(df_sc1, Process_error == "0.1"), "direction") + 
   theme(legend.position = "none")
 b <- precision_plot(filter(df_sc1, Process_error == "0.1"), "direction") + 
-  theme(legend.position = "none") # + coord_cartesian(ylim = c(-1, 1))
+  theme(legend.position = "none") + coord_cartesian(ylim = c(-1, 1))
 a + b
 ```
 
@@ -288,7 +288,7 @@ a + b
 a <- accuracy_plot(filter(df_sc1, Process_error == "0.2"), "direction") + 
   theme(legend.position = "none")
 b <- precision_plot(filter(df_sc1, Process_error == "0.2"), "direction") + 
-  theme(legend.position = "none") #+coord_cartesian(ylim = c(-1, 1))
+  theme(legend.position = "none") +coord_cartesian(ylim = c(-1, 1))
 a + b
 ```
 
