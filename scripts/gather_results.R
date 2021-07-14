@@ -50,8 +50,8 @@ df <- dplyr::left_join(lpi, K_scenarios) %>% dplyr::left_join(params)
 # accuracy ----
 
 # calculate LPI accuracy as % difference [(estimated - true)/true * 100]
-df$accuracy_boot <- ((df$LPI_boot - df$LPI_true)/df$LPI_true)*100
-
+#df$accuracy_boot <- ((df$LPI_boot - df$LPI_true)/df$LPI_true)*100
+df$accuracy_boot <- df$LPI_boot - df$LPI_true
 
 # precision ----
 
@@ -80,7 +80,8 @@ colnames(mean_uncertainty) <- c("mean_uncertainty", "sd_uncertainty")
 # attach to df
 df <- cbind(df, mean_uncertainty)
 # calculate difference betwee the expected interval width and the bootstrapped one
-df$interval_diff <- (df$interval_width-df$mean_uncertainty)/df$LPI_boot
+#df$interval_diff <- (df$interval_width-df$mean_uncertainty)/df$LPI_true
+df$interval_diff <- (df$interval_width-df$mean_uncertainty)
 
 # format df columns for plotting
 df$Lag <- factor(df$Lag, levels = c("0", "1", "2"))
