@@ -226,13 +226,13 @@ kbl(params, booktabs = TRUE, caption = "Simulation parameters") %>%
 ```{r, fig.cap="True and calculated LPI trends for each direction of biodiversity change."}
 # this was scenario 1, so filter for just that one
 df_sc1 <- dplyr::filter(df, scenario %in% paste0("scenario1", LETTERS[1:9]))
-ggplot(dplyr::filter(df_sc1, Process_error == "0"),
+(d <- ggplot(dplyr::filter(df_sc1, Process_error == "0"),
        aes(x = time, col = direction, group = scenario)) +
   geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
                    fill = direction), alpha = .3, lwd = 0) +
   geom_line(aes(y = LPI_true), lty = 2, lwd = .2, col = "grey") +
   geom_line(aes(y = LPI_boot)) +
-  theme_bw() + format_lpiplots
+  theme_bw() + format_lpiplots)
 ```
 
 ### Process error = 0.1
@@ -271,6 +271,15 @@ b <- precision_plot(filter(df_sc1, Process_error == "0"), "direction") +
   theme(legend.position = "none") + coord_cartesian(ylim = c(-1, 1))
 a + b
 ```
+
+```{r, include = FALSE, echo = FALSE}
+(d + labs(title = "Trends")) + a + b 
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/fig2_direction.png", width = 7.6, height = 2.78)
+
+# check out the numbers
+plotly::ggplotly(a)
+```
+
 
 ### Process error = 0.1
 
@@ -423,6 +432,7 @@ a <- accuracy_plot(df_temp, comparison_variable = "interaction")
 b <- precision_plot(df_temp, comparison_variable = "interaction") #+
   #coord_cartesian(ylim = c(-2,28))
 a + b
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/fig3_covariance.png", width = 7.6, height = 3.78)
 ```
 
 ### Process error = 0.1
@@ -446,7 +456,7 @@ a + b
 ```
 
 
-```{r, include = FALSE}
+```{r, include = TRUE}
 df_cov %>% #filter(Process_error == "0") %>%
   group_by(direction, interaction) %>%
   summarise(mean_accuracy = round(mean(accuracy_boot),2),
@@ -576,57 +586,95 @@ ggplot(dplyr::filter(df,
 
 ### Summary {.tabset .tabset-pills}
 
+```{r}
+pal_lags <- c("#08306b", "#2171b5", "#6baed6")
+```
+
+
 #### Process error = 0
 
-```{r, fig.height=12}
+```{r, fig.height=5}
 df_lag <- dplyr::filter(df, interaction != "0")
 a <- accuracy_plot(dplyr::filter(df_lag, Process_error == "0"), 
-                   comparison_variable = "Lag", colour_variable = "direction") + 
-                    facet_wrap(~interaction) + labs(x = "Lag") +
-  theme(legend.position = "top")
+                   comparison_variable = "direction", 
+                   colour_variable = "Lag") + 
+                    facet_wrap(~interaction) + #labs(x = "Lag") +
+  theme(legend.position = "top") + scale_color_manual(values = pal_lags)
 b <- precision_plot(dplyr::filter(df_lag, Process_error == "0"), 
-                   comparison_variable = "Lag", 
-                   colour_variable = "direction") + 
+                   comparison_variable = "direction", 
+                   colour_variable = "Lag") + 
                    facet_wrap(~interaction) + 
-  labs(x = "Lag") +
+  #labs(x = "Lag") +
   #coord_cartesian(ylim = c(-2,30)) +
-  theme(legend.position = "top") 
-a / b
+  theme(legend.position = "top") + scale_color_manual(values = pal_lags)
+a + b
+# plotly::ggplotly(a)
+# plotly::ggplotly(b)
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/fig4_lag.png", width = 9, height = 5)
 ```
 
 #### Process error = 0.1
 
-```{r, fig.height=12}
+```{r, fig.height=5}
 df_lag <- dplyr::filter(df, interaction != "0")
 a <- accuracy_plot(dplyr::filter(df_lag, Process_error == "0.1"), 
-                   comparison_variable = "Lag") + 
-                    facet_wrap(~interaction) + labs(x = "Lag") +
-  theme(legend.position = "top")
+                   comparison_variable = "direction", 
+                   colour_variable = "Lag") + 
+                    facet_wrap(~interaction) + #labs(x = "Lag") +
+  theme(legend.position = "top") + scale_color_manual(values = pal_lags)
 b <- precision_plot(dplyr::filter(df_lag, Process_error == "0.1"), 
-                   comparison_variable = "Lag") + 
+                   comparison_variable = "direction", 
+                   colour_variable = "Lag") + 
                     facet_wrap(~interaction) + 
-  labs(x = "Lag") +
+  #labs(x = "Lag") +
   #coord_cartesian(ylim = c(-2,30)) +
-  theme(legend.position = "top")
-a / b
+  theme(legend.position = "top") + scale_color_manual(values = pal_lags)
+a + b
+# plotly::ggplotly(a)
+# plotly::ggplotly(b)
 ```
 
 
 #### Process error = 0.2
 
-```{r, fig.height=12}
+```{r, fig.height=5}
 df_lag <- dplyr::filter(df, interaction != "0")
 a <- accuracy_plot(dplyr::filter(df_lag, Process_error == "0.2"), 
-                   comparison_variable = "Lag") + 
-                    facet_wrap(~interaction) + labs(x = "Lag") +
-  theme(legend.position = "top")
+                   comparison_variable = "direction", 
+                   colour_variable = "Lag") + 
+                    facet_wrap(~interaction) + #labs(x = "Lag") +
+  theme(legend.position = "top")+ scale_color_manual(values = pal_lags)
 b <- precision_plot(dplyr::filter(df_lag, Process_error == "0.2"), 
-                   comparison_variable = "Lag") + 
+                   comparison_variable = "direction", 
+                   colour_variable = "Lag") + 
                     facet_wrap(~interaction) + 
-  labs(x = "Lag") +
+  #labs(x = "Lag") +
   #coord_cartesian(ylim = c(-2,30)) +
-  theme(legend.position = "top") 
-a / b
+  theme(legend.position = "top") + scale_color_manual(values = pal_lags)
+a + b
+# plotly::ggplotly(a)
+# plotly::ggplotly(b)
 ```
 
     The LPI is not sensitive to lags of 1 or 2 time steps.
+    
+```{r, fig.height = 15}
+# process error comparison plot
+df_lag %>%
+  group_by(direction, interaction, Lag, Process_error) %>%
+  summarise(mean_se(interval_diff)) %>%
+ggplot(aes(x = Process_error, y = y, col = Lag)) +
+  geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2) +
+  facet_grid(interaction~direction, scales = "free") +
+  scale_color_manual(values = pal_lags) +
+  labs(y = "Difference in interval width", 
+         x = "", 
+         title = "Precision",
+         col = "Lag") +
+ theme(legend.position = "bottom") 
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_lag.png", width = 5.71, height = 7.42)
+```
+    
+    
