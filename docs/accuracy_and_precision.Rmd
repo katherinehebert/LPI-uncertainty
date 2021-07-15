@@ -44,7 +44,13 @@ colours <- c("0.2" = "#e66101",
              "0.1" = "#fdb863", 
              "-0.1"= "#b2abd2", 
              "-0.2" = "#5e3c99")
+
+# colour palette for process error plots
+pal_lags <- c("#3f007d", "#6a51a3", "#9e9ac8")
+pal_error <- c("#08306b", "#2171b5", "#6baed6")
+
 ```
+
 
 ```{r}
 df$Process_error <- factor(df$Process_error, levels = c("0", "0.1", "0.2"))
@@ -277,7 +283,7 @@ a + b
 ggsave("~/Documents/GitHub/LPI-sensitivity/figures/fig2_direction.png", width = 7.6, height = 2.78)
 
 # check out the numbers
-plotly::ggplotly(a)
+# plotly::ggplotly(a)
 ```
 
 
@@ -321,6 +327,39 @@ df_sc1 %>% filter(Process_error == "0") %>%
     * declining trends are overestimated by the LPI 
     * declining trends are estimated with lower precision
 
+
+```{r, echo = FALSE, include = FALSE}
+# process error comparison plot
+a <- df_sc1 %>%
+  group_by(direction, Process_error) %>%
+  summarise(mean_se(accuracy_boot)) %>%
+ggplot(aes(col = Process_error, y = y, x = direction)) +
+  geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2) +
+  labs(y = "Difference from true LPI", 
+         title = "Accuracy",
+       x = "",
+         col = "Process error") +
+ theme(legend.position = "bottom") +
+  scale_color_manual(values = pal_error)
+b <- df_sc1 %>%
+  group_by(direction, Process_error) %>%
+  summarise(mean_se(interval_diff)) %>%
+ggplot(aes(col = Process_error, y = y, x = direction)) +
+  geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2) +
+  labs(y = "Difference in interval width", 
+         title = "Precision",
+         col = "Process error",
+       x = "") +
+ theme(legend.position = "bottom") +
+  scale_color_manual(values = pal_error)
+a + b
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_direction.png", width = 7.6, height = 3.7)
+```
+  
 
 ***
 
@@ -472,6 +511,41 @@ df_cov %>% #filter(Process_error == "0") %>%
     * growing and stable trends are slightly overestimated when there is high positive covariance  
     * however, this sensitivity does not change at different levels of process error   
     
+```{r, echo = FALSE, include = FALSE}
+# process error comparison plot
+a <- df_cov %>%
+  group_by(direction, interaction, Process_error) %>%
+  summarise(mean_se(accuracy_boot)) %>%
+ggplot(aes(col = Process_error, y = y, x = direction)) +
+  geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2) +
+  facet_wrap(~interaction)+#, scales = "free") +
+  labs(y = "Difference from true LPI", 
+       title = "Accuracy", 
+       x = "",
+       col = "Process error") +
+ theme(legend.position = "bottom") +
+  scale_color_manual(values = pal_error)
+b <- df_cov %>%
+  group_by(direction, interaction, Process_error) %>%
+  summarise(mean_se(interval_diff)) %>%
+ggplot(aes(col = Process_error, y = y, x = direction)) +
+  geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2) +
+  facet_wrap(~interaction)+#, scales = "free") +
+  labs(y = "Difference in interval width", 
+         col = "Process error", 
+         title = "Precision",
+         x = "") +
+ theme(legend.position = "bottom") +
+  scale_color_manual(values = pal_error)
+a + b
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_covariance.png", width = 7.6, height = 6)
+```
+    
+    
 ## Is the LPI sensitive to *lagged* covariance? 
 
 We introduced two levels of lag in the interaction effect that influences how populations covary through time:
@@ -586,11 +660,6 @@ ggplot(dplyr::filter(df,
 
 ### Summary {.tabset .tabset-pills}
 
-```{r}
-pal_lags <- c("#08306b", "#2171b5", "#6baed6")
-```
-
-
 #### Process error = 0
 
 ```{r, fig.height=5}
@@ -658,23 +727,39 @@ a + b
 
     The LPI is not sensitive to lags of 1 or 2 time steps.
     
-```{r, fig.height = 15}
+```{r, fig.height = 15, include = FALSE}
 # process error comparison plot
 df_lag %>%
   group_by(direction, interaction, Lag, Process_error) %>%
-  summarise(mean_se(interval_diff)) %>%
-ggplot(aes(x = Process_error, y = y, col = Lag)) +
+  summarise(mean_se(accuracy_boot)) %>%
+ggplot(aes(col = Process_error, y = y, x = Lag)) +
   geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
   geom_point(size = 2.5) +
   geom_hline(yintercept = 0, lty = 2, lwd = .2) +
-  facet_grid(interaction~direction, scales = "free") +
-  scale_color_manual(values = pal_lags) +
+  facet_grid(interaction~direction)+#, scales = "free") +
+  scale_color_manual(values = pal_error) +
+  labs(y = "Difference from true LPI", 
+         x = "", 
+         title = "Accuracy",
+         col = "Process error") +
+ theme(legend.position = "bottom") 
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_lag_accuracy.png", width = 5.71, height = 7.42)
+df_lag %>%
+  group_by(direction, interaction, Lag, Process_error) %>%
+  summarise(mean_se(interval_diff)) %>%
+ggplot(aes(col = Process_error, y = y, x = Lag)) +
+  geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = 0, lty = 2, lwd = .2) +
+  facet_grid(interaction~direction)+#, scales = "free") +
+  scale_color_manual(values = pal_error) +
   labs(y = "Difference in interval width", 
          x = "", 
          title = "Precision",
-         col = "Lag") +
- theme(legend.position = "bottom") 
-ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_lag.png", width = 5.71, height = 7.42)
+         col = "Process error") +
+ theme(legend.position = "bottom")
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_lag_precision.png", width = 5.71, height = 7.42)
+
 ```
     
     
