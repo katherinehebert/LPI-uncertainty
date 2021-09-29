@@ -72,13 +72,19 @@ accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "dir
            group = scenario,
            col = get(colour_variable))) +
   geom_hline(yintercept = 0, lwd = 0.5) +
+  # geom_violin(aes(fill = get(colour_variable), 
+  #                 y = accuracy_boot), 
+  #             alpha = .3, lwd = 0, 
+  #             position = position_dodge(width = .5)) +
   stat_summary(fun.data = mean_se, 
                fun.args = list(mult=1),
                geom = "pointrange", 
                position = position_dodge(width = .5)) + 
   labs(x = "", 
-       y = "Difference from true LPI (%)", 
-       title = "Bias", col = colour_variable) +
+       y = expression(Delta~from~true~LPI), 
+       title = "Trend bias", 
+       col = colour_variable, 
+       fill = colour_variable) +
   theme(legend.position = "bottom") #+
     #coord_cartesian(ylim = c(-10,120))
 }
@@ -88,15 +94,20 @@ precision_plot <- function(df_subset, comparison_variable, colour_variable = "di
                         group = scenario,
                         col = get(colour_variable))) +
   geom_hline(yintercept = 0, lwd = 0.5) +
+  # geom_violin(aes(fill = get(colour_variable), 
+  #                 y = interval_diff), 
+  #             alpha = .3, lwd = 0,
+  #             position = position_dodge(width = .5)) +
   stat_summary(aes(y = interval_diff),
                fun.data = mean_se,
                fun.args = list(mult=1),
                geom = "pointrange",
                position = position_dodge(width = .5)) +
-    labs(y = "Difference in interval width", 
+    labs(y = expression(Delta~from~true~uncertainty~interval), 
          x = "", 
-         title = "Precision",
-         col = colour_variable) +
+         title = "Uncertainty bias",
+         col = colour_variable,
+         fill = colour_variable) +
  theme(legend.position = "bottom") 
 }
 ```
@@ -669,14 +680,14 @@ a <- accuracy_plot(dplyr::filter(df_lag, Process_error == "0"),
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
                     facet_wrap(~interaction, nrow = 1) + #labs(x = "Lag") +
-  theme(legend.position = "none") + scale_color_manual(values = pal_lags)
+  theme(legend.position = "none") + scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
 b <- precision_plot(dplyr::filter(df_lag, Process_error == "0"), 
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
                    facet_wrap(~interaction, nrow = 1) + 
   #labs(x = "Lag") +
   #coord_cartesian(ylim = c(-2,30)) +
-  theme(legend.position = "bottom") + scale_color_manual(values = pal_lags)
+  theme(legend.position = "bottom") + scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
 a / b
 # plotly::ggplotly(a)
 # plotly::ggplotly(b)
@@ -691,14 +702,14 @@ a <- accuracy_plot(dplyr::filter(df_lag, Process_error == "0.1"),
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
                     facet_wrap(~interaction) + #labs(x = "Lag") +
-  theme(legend.position = "top") + scale_color_manual(values = pal_lags)
+  theme(legend.position = "top") + scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
 b <- precision_plot(dplyr::filter(df_lag, Process_error == "0.1"), 
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
                     facet_wrap(~interaction) + 
   #labs(x = "Lag") +
   #coord_cartesian(ylim = c(-2,30)) +
-  theme(legend.position = "top") + scale_color_manual(values = pal_lags)
+  theme(legend.position = "top") + scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
 a + b
 # plotly::ggplotly(a)
 # plotly::ggplotly(b)
@@ -713,14 +724,14 @@ a <- accuracy_plot(dplyr::filter(df_lag, Process_error == "0.2"),
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
                     facet_wrap(~interaction) + #labs(x = "Lag") +
-  theme(legend.position = "top")+ scale_color_manual(values = pal_lags)
+  theme(legend.position = "top")+ scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
 b <- precision_plot(dplyr::filter(df_lag, Process_error == "0.2"), 
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
                     facet_wrap(~interaction) + 
   #labs(x = "Lag") +
   #coord_cartesian(ylim = c(-2,30)) +
-  theme(legend.position = "top") + scale_color_manual(values = pal_lags)
+  theme(legend.position = "top") + scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
 a / b
 # plotly::ggplotly(a)
 # plotly::ggplotly(b)
