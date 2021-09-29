@@ -46,7 +46,7 @@ ggplot(filter(df_err, Lag == "0")) +
   facet_wrap(~Process_error, dir = "v") +
   labs(x = "", y = expression(N[sim]~Delta~N[GAM]), col = "Scenario") +
   theme(legend.position = "bottom")
-ggsave("figures/figsupp_GAMpredictions.png", width = 11.8, height = 7)
+ggsave("figures/figsupp_GAMpredictions.png", width = 11.8, height = 9)
 
 # plot standard error from the GAM predictions
 ggplot(filter(df_err, Lag == "0")) +

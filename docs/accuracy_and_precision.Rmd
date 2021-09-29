@@ -554,7 +554,7 @@ ggplot(aes(col = Process_error, y = y, x = direction)) +
  theme(legend.position = "bottom") +
   scale_color_manual(values = pal_error)
 a / b
-ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_covariance.png", width = 7.6, height = 6)
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_covariance.png", width = 8, height = 7)
 ```
     
     
