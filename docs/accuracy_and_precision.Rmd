@@ -272,9 +272,9 @@ ggplot(dplyr::filter(df_sc1, Process_error == "0.2"),
 
 ```{r, fig.cap = "LPI sensitivity to direction of change."}
 a <- accuracy_plot(filter(df_sc1, Process_error == "0"), "direction") + 
-  theme(legend.position = "none")
+  theme(legend.position = "none") 
 b <- precision_plot(filter(df_sc1, Process_error == "0"), "direction") + 
-  theme(legend.position = "none") + coord_cartesian(ylim = c(-1, 1))
+  theme(legend.position = "none") #+ coord_cartesian(ylim = c(-1, 1))
 a + b
 ```
 
@@ -307,12 +307,10 @@ b <- precision_plot(filter(df_sc1, Process_error == "0.2"), "direction") +
 a / b
 ```
 
-```{r, out.width = 9, include=FALSE}
-# NOTE: this is all levels of process error together, so must update if needed to show this
-
+```{r, out.width = 9, include=TRUE}
 # calculate mean accuracy and mean precision with standard error
 se <- function(x) sqrt(var(x)/length(x))
-df_sc1 %>% filter(Process_error == "0") %>%
+df_sc1 %>% filter(Process_error == "0.2") %>%
   group_by(direction) %>%
   summarise(mean_accuracy = round(mean(accuracy_boot),2),
             #se_accuracy = round(se(accuracy_boot),2),
@@ -480,8 +478,7 @@ a / b
 ```{r, fig.cap = "LPI sensitivity to direction of change and covariance.", fig.height = 8}
 df_temp <- dplyr::filter(df_cov, Process_error == "0") 
 a <- accuracy_plot(df_temp, comparison_variable = "interaction") + theme(legend.position = "none")
-b <- precision_plot(df_temp, comparison_variable = "interaction") #+
-  #coord_cartesian(ylim = c(-2,28))
+b <- precision_plot(df_temp, comparison_variable = "interaction") 
 a / b
 ggsave("~/Documents/GitHub/LPI-sensitivity/figures/fig3_covariance.png", width = 6.14, height = 6.26)
 ```
@@ -506,14 +503,15 @@ b <- precision_plot(df_temp, comparison_variable = "interaction")# +
 a / b
 ```
 
+## Summary table
 
 ```{r, include = TRUE}
-df_cov %>% #filter(Process_error == "0") %>%
+df_cov %>% filter(Process_error == "0") %>%
   group_by(direction, interaction) %>%
-  summarise(mean_accuracy = round(mean(accuracy_boot),2),
-            se_accuracy = round(se(accuracy_boot), 2),
-            mean_precision = round(mean(interval_width),2),
-            se_precision = round(se(interval_width), 2)) %>% 
+  summarise(mean_accuracy = round(mean(accuracy_boot),3),
+            se_accuracy = round(se(accuracy_boot), 3),
+            mean_precision = round(mean(interval_diff),3),
+            se_precision = round(se(interval_diff),3)) %>% 
   kableExtra::kable()
 ```
 
@@ -553,8 +551,8 @@ ggplot(aes(col = Process_error, y = y, x = direction)) +
          x = "") +
  theme(legend.position = "bottom") +
   scale_color_manual(values = pal_error)
-a / b
-ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_covariance.png", width = 8, height = 7)
+a + b
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_covariance.png", width = 10, height = 7)
 ```
     
     
@@ -773,5 +771,15 @@ ggplot(aes(col = Process_error, y = y, x = Lag)) +
 ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_lag_precision.png", width = 5.71, height = 7.42)
 
 ```
+
+## Summary table
     
-    
+```{r, include = TRUE}
+df_lag %>%
+  group_by(direction, interaction, Lag, Process_error) %>%
+  summarise(mean_accuracy = round(mean(accuracy_boot),3),
+            se_accuracy = round(se(accuracy_boot), 3),
+            mean_precision = round(mean(interval_diff),3),
+            se_precision = round(se(interval_diff),3)) %>% 
+  kableExtra::kable()
+```

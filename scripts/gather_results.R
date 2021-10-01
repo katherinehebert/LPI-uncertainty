@@ -3,6 +3,7 @@
 # load packages and prep environment
 library(ggplot2)
 library(dplyr)
+library(tidyr)
 library(data.table)
 theme_set(ggpubr::theme_pubr())
 
@@ -30,8 +31,6 @@ params <- dplyr::bind_rows(params, .id = "scenario")
 uncertainties <- lapply(paste0("outputs/", list.files(path = "outputs/", pattern = "_uncertainty.RDS")), readRDS)
 names(uncertainties) <- gsub("_uncertainty.RDS", "", list.files(path = "outputs/", pattern = "_uncertainty.RDS"))
 uncertainty <- bind_rows(uncertainties, .id = "scenario")
-# subset
-#uncertainties <- subset(uncertainties, select = c("scenario", ))
 
 # make table for categories from carrying capacity scenarios
 K_scenarios <- data.frame("scenario" = params$scenario, "direction" = NA)
@@ -56,32 +55,45 @@ df$accuracy_boot <- df$LPI_boot - df$LPI_true
 # precision ----
 
 # does the true LPI fall within the 95% confidence interval?
-if(df$LPI_true < df$cihi_boot && df$LPI_true > df$cilo_boot){
+if(df$LPI_true <= df$cihi_boot && df$LPI_true >= df$cilo_boot){
   df$precision_boot <- "yes"} else {
     df$precision_boot <- "no"
   }
-# interval width divided by the lpi value
-df$interval_width <- ((df$cihi_boot-df$cilo_boot)/df$LPI_boot)*100
-df$interval_width_se <- ((df$cihi_se-df$cilo_se)/df$LPI_se)*100
+if(df$LPI_true <= df$cihi_se && df$LPI_true >= df$cilo_se){
+  df$precision_se <- "yes"} else {
+    df$precision_se <- "no"
+  }
 
+# interval width 
+df$interval_width <- df$cihi_boot-df$cilo_boot #((df$cihi_boot-df$cilo_boot)/df$LPI_boot)
+df$interval_width_se <- df$cihi_se-df$cilo_se #((df$cihi_se-df$cilo_se)/df$LPI_se)
+
+# is the bootstrap interval within the error propagated one?
+df$cilo_selargest <- df$cilo_se < df$cilo_boot
+df$cihi_selargest <- df$cihi_se > df$cihi_boot
+# put NA on the first time step, which has no uncertainty
+df$cilo_selargest[which(df$time == 1)] <- NA
+df$cihi_selargest[which(df$time == 1)] <- NA
 
 # precision vs. uncertainty ----
 
 # group uncertainties by scenario x time to match up with df
-temp <- uncertainty %>% group_split(scenario, time) 
-mean_uncertainty <- list()
-sd_uncertainty <- list()
-for(i in 1:length(temp)){
-  mean_uncertainty[[i]] <- mean(temp[[i]]$uncertainty_LPI)
-  sd_uncertainty[[i]] <- sd(temp[[i]]$uncertainty_LPI)
-}
-mean_uncertainty <- cbind(unlist(mean_uncertainty), unlist(sd_uncertainty))
-colnames(mean_uncertainty) <- c("mean_uncertainty", "sd_uncertainty")
-# attach to df
-df <- cbind(df, mean_uncertainty)
-# calculate difference betwee the expected interval width and the bootstrapped one
+# temp <- uncertainty %>% group_split(scenario, time) 
+# mean_uncertainty <- list()
+# sd_uncertainty <- list()
+# for(i in 1:length(temp)){
+#   mean_uncertainty[[i]] <- mean(temp[[i]]$uncertainty_LPI)
+#   sd_uncertainty[[i]] <- sd(temp[[i]]$uncertainty_LPI)
+# }
+# mean_uncertainty <- cbind(unlist(mean_uncertainty), unlist(sd_uncertainty))
+# colnames(mean_uncertainty) <- c("mean_uncertainty", "sd_uncertainty")
+# # attach to df
+# df <- cbind(df, mean_uncertainty)
+
+# calculate difference between the expected interval width and the bootstrapped one
 #df$interval_diff <- (df$interval_width-df$mean_uncertainty)/df$LPI_true
-df$interval_diff <- (df$interval_width-df$mean_uncertainty)
+#df$interval_diff <- (df$interval_width-df$mean_uncertainty)#/df$LPI_true
+df$interval_diff <- (df$interval_width-df$interval_width_se)
 
 # format df columns for plotting
 df$Lag <- factor(df$Lag, levels = c("0", "1", "2"))

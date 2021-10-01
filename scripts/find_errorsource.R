@@ -40,13 +40,28 @@ df_err <- inner_join(results, df)
 
 # plot difference between prediction and simulation
 ggplot(filter(df_err, Lag == "0")) +
-  geom_jitter(aes(y = N_pred-N, 
+  geom_jitter(aes(y = (10^N_pred)-(10^N), 
                   x = interaction, 
                   col = direction), size = 1, alpha = .7) +
   facet_wrap(~Process_error, dir = "v") +
   labs(x = "", y = expression(N[sim]~Delta~N[GAM]), col = "Scenario") +
   theme(legend.position = "bottom")
 ggsave("figures/figsupp_GAMpredictions.png", width = 11.8, height = 9)
+
+# plot N from GAM prediction vs. simulated N
+ggplot(filter(df_err, Lag == "0" & Process_error == "0")) +
+  geom_point(aes(y = 10^N_pred, 
+                  x = 10^N, 
+                  col = direction), size = 1, alpha = .7) +
+  geom_smooth(aes(y = 10^N_pred, x = 10^N), method = "lm", col = "black", lwd = .3) +
+  geom_abline(intercept = 0, slope = 1, lwd = .1) +
+  facet_grid(direction~interaction) +
+  labs(x = expression(N[sim]), 
+       y = expression(N[GAM]), 
+       col = "Scenario") +
+  theme_bw() +
+  theme(legend.position = "bottom") 
+ggsave("figures/figsupp_GAMvSim.png", width = 11.8, height = 9)
 
 # plot standard error from the GAM predictions
 ggplot(filter(df_err, Lag == "0")) +
@@ -97,4 +112,3 @@ b <- ggplot(filter(df_err, Lag == "0")) +
   theme(legend.position = "bottom")
 a + b
 ggsave("figures/figsupp_GAMvsBoot_CI.png", width = 17.3, height = 7)
-
