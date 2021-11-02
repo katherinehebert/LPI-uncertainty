@@ -76,7 +76,7 @@ ggplot(filter(df_err, Lag == "0")) +
   facet_wrap(~Process_error, dir = "v", scales = "free") +
   labs(x = "", y = "GAM standard error", fill = "Scenario", col = "Scenario") +
   theme(legend.position = "bottom")
-ggsave("figures/figsupp_GAMerror.png", width = 7, height = 8.79)
+ggsave("figures/figsupp_GAMerror.png", width = 8.5, height = 8.79)
 
 # the bootstrapped confidence intervals always underestimate the error-propagated intervals
 a <- ggplot(filter(df_err, Lag == "0")) +
