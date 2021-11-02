@@ -1,7 +1,6 @@
-
 library(shiny)
 
-### functions ####
+### FUNCTIONS ####--------------------------------------------------------------
 
 # function to generate population time series
 N <- function(x, sigma){
@@ -49,7 +48,8 @@ calclpi <- function(dt){
     return(lpi)
 }
 
-# Define UI for application that draws a histogram
+### UI ####---------------------------------------------------------------------
+
 ui <- fluidPage(
     
     # Application title
@@ -57,62 +57,62 @@ ui <- fluidPage(
     
     fluidPage(
         fluidRow(
-            column(4,
+            column(3,
                    h4("Population time series"),
                    p("Population time series are generated as:"),
-                   withMathJax(helpText("$$N_t = N(rate*N_{t-1}, error)$$")),)
-        ),
-        fluidRow(
-            column(4, 
+                   withMathJax(helpText("$$N_t = N(rate*N_{t-1}, error)$$")),
+                   p("The number selected in the error slider is multiplied with Nt so the error is relative to the population's abundance.")
+            ),
+            column(3, 
                    p("Select the rate of change in the populations below."),
                    sliderInput("change1",
-                               "Rate of change (Population 1):",
+                               NULL,
                                min = 0,
                                max = 2,
                                value = 0.8, 
                                step = 0.1),
                    sliderInput("change2",
-                               "Rate of change (Population 2):",
+                               NULL,
                                min = 0,
                                max = 2,
-                               value = 1.1, 
+                               value = 1, 
                                step = 0.1),
                    sliderInput("change3",
-                               "Rate of change (Population 3):",
+                               NULL,
                                min = 0,
                                max = 2,
                                value = 1.2, 
                                step = 0.1)
             ),
-            column(4, 
+            column(3, 
                    p("Select the observation error in populations below."),
                    sliderInput("sigma1",
-                               "Error (Population 1):",
+                               NULL,
                                min = 0,
                                max = 0.5,
-                               value = 0.1, 
+                               value = 0.05, 
                                step = 0.01),
                    sliderInput("sigma2",
-                               "Error (Population 2):",
+                               NULL,
                                min = 0,
                                max = 0.5,
-                               value = 0.1, 
+                               value = 0.05, 
                                step = 0.01),
                    sliderInput("sigma3",
-                               "Error (Population 3):",
+                               NULL,
                                min = 0,
                                max = 0.5,
-                               value = 0.1, 
+                               value = 0.05, 
                                step = 0.01)
             ),
-            column(4, 
+            column(3, 
                    plotOutput("abundances", height = '300px', width = '300px')
             )
         ),
         fluidRow(
             column(3, 
                    h4("Step 1: Smooth and predict time series"),
-                   p("Population time series are smoothed with a GAM and predicted over the series' time interval. Each point is an observation of the abundance of the population at a given time step. Smooth trend is shown as a line overlayed on these data points."),
+                   p("Population time series are smoothed with a GAM and predicted over the series' time interval."),
                    withMathJax(helpText("$$N_{pred} = s(time)$$"))
             ),
             column(3, 
@@ -132,15 +132,16 @@ ui <- fluidPage(
             )
         ),
         fluidRow(
-            column(3, plotOutput("gams")),
-            column(3, plotOutput("growthrates")),
-            column(3, plotOutput("meangrowthrate")),
-            column(3, plotOutput("lpi"))
+            column(3, plotOutput("gams", height = '300px', width = '300px')),
+            column(3, plotOutput("growthrates", height = '300px', width = '300px')),
+            column(3, plotOutput("meangrowthrate", height = '300px', width = '300px')),
+            column(3, plotOutput("lpi", height = '300px', width = '300px'))
         )
     )
 )
 
-# Define server logic required to draw a histogram
+### SERVER ####-----------------------------------------------------------------
+
 server <- function(input, output) {
     
     time <- 1:6
@@ -165,8 +166,11 @@ server <- function(input, output) {
     output$gams <- renderPlot({
         
         # plot the smoothed gams
-        plot(time, smooth(A()), ylim = c(0, max(c(smooth(A()), smooth(B()), smooth(C())))), 
-             ylab = "Smoothed abundance", xlab = "time", type = "l")
+        plot(time, A(), ylim = c(0, max(c(smooth(A()), smooth(B()), smooth(C())))), 
+             ylab = "Smoothed abundance", xlab = "time", type = "l", lty = 2, col = "grey40")
+        lines(B(), lty = 2, col = "grey40")
+        lines(C(), lty = 2, col = "grey40")
+        lines(smooth(A()))
         lines(smooth(B()))
         lines(smooth(C()))
         
@@ -217,7 +221,7 @@ server <- function(input, output) {
         df <- as.data.frame(cbind(df, means))
         
         lpi <- calclpi(log10(df$means))
-        plot(lpi ~ time[-1], type = "l", ylim = c(0,2))
+        plot(lpi ~ time[-1], type = "l", xlab = "time", ylim = c(0,2))
         
     })
     
