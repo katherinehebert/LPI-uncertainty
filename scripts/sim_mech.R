@@ -14,6 +14,9 @@ sim_mech <- function(
   simname = filename,
   save_figs = TRUE){
   
+  # set seed for randomisations
+  set.seed(2)
+  
   ## arguments: ## ----
   
   # npairs = number of pairs of populations to simulate
@@ -25,30 +28,11 @@ sim_mech <- function(
   # alpha_ij = interaction coefficient (effect of set j on set i)
   # alpha_ji = interaction coefficient (effect of set i on set j)
   # K = carrying capacity of the environment
-  # process = absolute value of the process error limit to add to growth rates
+  # process = absolute value of the  to add to growth rates
   # observation = absolute value of the obs error limit to add to population sizes
   
   # add more time steps to allow lag
   timesteps = timesteps + lag_value
-  
-  # make growth rates matrix form
-  r_i = matrix(lambda_i, nrow = n_pairs, ncol = timesteps) 
-  r_j = matrix(lambda_j, nrow = n_pairs, ncol = timesteps) 
-  
-  # add process error to growth rates
-  
-    # set i
-    set.seed(22)
-    process_error_i = rnorm(n = n_pairs*timesteps, mean = process, sd = process/10)
-    r_i_error = r_i + process_error_i
-    # observation error
-    obs_i_error = matrix(rnorm(n = n_pairs*timesteps, mean = observation, sd = observation/10), nrow = n_pairs, ncol = timesteps)
-    
-    # set j
-    set.seed(2)
-    process_error_j = rnorm(n = n_pairs*timesteps, mean = process, sd = process/10)
-    r_j_error = r_j + process_error_j
-    obs_j_error = matrix(rnorm(n = n_pairs*timesteps, mean = observation, sd = observation/10), nrow = n_pairs, ncol = timesteps)
   
   # run simulation --------------------------------------------------------------- 
   
@@ -60,14 +44,25 @@ sim_mech <- function(
   # calculate population sizes
   for(t in 1:timesteps){
     
+    # generate growth rates from a lognormal distribution with process error
+    r_i_error = rlnorm(n = n_pairs, meanlog = log(lambda_i), sdlog = process)
+    r_j_error = rlnorm(n = n_pairs, meanlog = log(lambda_j), sdlog = process)
+    
     # population i
-    temp_i = Ni[,t]*(1 + r_i_error[,t]*(1 - (Ni[,t] + alpha_ij*Nj[,t])/K[t])) + obs_i_error[,t]
+    temp_i = Ni[,t]*(1 + r_i_error*(1 - (Ni[,t] + alpha_ij*Nj[,t])/K[t]))
+    temp_i = sapply(temp_i, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
+    
+    # if NAs or 0, set to 0.
     temp_i[which(is.na(temp_i))] <- 0
     temp_i[which(temp_i < 0)] <- 0
     Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
     
     # population j
-    temp_j = Nj[,t]*(1 + r_j_error[,t]*(1 - (Nj[,t] + alpha_ji*Ni[,t])/K[t])) + obs_j_error[,t]
+    temp_j = Nj[,t]*(1 + r_j_error*(1 - (Nj[,t] + alpha_ji*Ni[,t])/K[t]))
+    # take population size with process error from a lognormal distribution with SD observation
+    temp_j = sapply(temp_j, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
+    
+    # if NAs or 0, set to 0.
     temp_j[which(is.na(temp_j))] <- 0
     temp_j[which(temp_j < 0)] <- 0
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
@@ -79,7 +74,7 @@ sim_mech <- function(
     Nj <- Nj[,1:(lag_value + 1)]
     for(t in c(lag_value + 1):timesteps){
       # population j
-      temp_j = Nj[,t]*(1 + r_j_error[,t]*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t])) + obs_j_error[,t]
+      temp_j = Nj[,t]*(1 + r_j_error*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t])) + obs_j_error[,t]
       temp_j[which(is.na(temp_j))] <- 0
       temp_j[which(temp_j < 0)] <- 0
       #print(temp_j)
@@ -114,8 +109,31 @@ sim_mech <- function(
   # bind together
   N = rbind(pops_long(Ni, set_id = "i"), pops_long(Nj, set_id = "j"))
   
+  # make parameter table
+  params <- data.frame("parameter" = c("Initial size (N0)",
+                                       "Maximum growth rate (r)",
+                                       "Interaction effect (alpha)",
+                                       "Observation error",
+                                       "Process error",
+                                       "Lag"),
+                       "i" = c(N0i,
+                               lambda_i,
+                               alpha_ij,
+                               observation,
+                               process,
+                               lag_value),
+                       "j" = c(N0j,
+                               lambda_j,
+                               alpha_ji,
+                               observation,
+                               process,
+                               lag_value)
+  )
+  saveRDS(params, paste0("simulations/", simname, "_params.RDS"))
   
-  if(save_figs == TRUE){
+  if(save_figs == FALSE){ 
+    return(N)
+  } else {
     
     # plot
     N_plot <- ggplot(N) +
@@ -149,29 +167,6 @@ sim_mech <- function(
                        main = "Correlation")
   dev.off()
   
-  
-  # make parameter table
-  params <- data.frame("parameter" = c("Initial size (N0)",
-                                       "Maximum growth rate (r)",
-                                       "Interaction effect (alpha)",
-                                       "Observation error",
-                                       "Process error",
-                                       "Lag"),
-                       "i" = c(N0i,
-                               lambda_i,
-                               alpha_ij,
-                               observation,
-                               process,
-                               lag_value),
-                       "j" = c(N0j,
-                               lambda_j,
-                               alpha_ji,
-                               observation,
-                               process,
-                               lag_value)
-  )
-  saveRDS(params, paste0("simulations/", simname, "_params.RDS"))
-  
-  }
   return(N)
+    }
 }

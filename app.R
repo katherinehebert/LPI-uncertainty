@@ -1,11 +1,5 @@
 #
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+# Shiny app to test parameters used to simulate populations on which the LPI is tested
 
 library(dplyr)
 library(tidyr)
@@ -14,6 +8,8 @@ library(ggplot2)
 library(patchwork)
 library(thematic)
 source('~/Documents/GitHub/LPI-Sensitivity/scripts/sim_mech.R')
+
+filename <- "ignore"
 
 plot_function <- function(df){
     ggplot(df) + 
@@ -48,14 +44,16 @@ ui <- fluidPage(theme = cute_theme,
         sidebarPanel(
             sliderInput("lambda_i",
                         "Growth rate (populations i):",
-                        min = 0.5,
+                        min = 1,
                         max = 2,
-                        value = 1.5),
+                        value = 1.5, 
+                        step = .1),
             sliderInput("lambda_j",
                         "Growth rate (populations j):",
-                        min = 0.5,
+                        min = 1,
                         max = 2,
-                        value = 1.5),
+                        value = 1.5, 
+                        step = .1),
             sliderInput("alpha_ji",
                         "Interaction effect of J on I:",
                         min = -0.5,
@@ -74,8 +72,8 @@ ui <- fluidPage(theme = cute_theme,
             sliderInput("obs",
                         "Observation error:",
                         min = 0,
-                        max = 50,
-                        value = 10),
+                        max = 1,
+                        value = 0.1),
             sliderInput("lag",
                         "Lag in interaction:",
                         min = 0,

@@ -14,7 +14,7 @@ theme_set(ggpubr::theme_pubr())
 ## COMMON PARAMS ---------------------------------------------------------------
 pop_pairs = 10
 steps = 10
-obs = 5
+obs = 0.05
 
 ## CARRYING CAPACITY SCENARIOS -------------------------------------------------
 K_increase = 100 + 4*c(0:9)
