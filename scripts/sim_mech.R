@@ -72,9 +72,16 @@ sim_mech <- function(
   if(lag_value != 0){
     # print("running") # to test the loop
     Nj <- Nj[,1:(lag_value + 1)]
+    
     for(t in c(lag_value + 1):timesteps){
+      
+      # generate growth rates from a lognormal distribution with process error
+      r_j_error = rlnorm(n = n_pairs, meanlog = log(lambda_j), sdlog = process)
+      
       # population j
-      temp_j = Nj[,t]*(1 + r_j_error*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t])) + obs_j_error[,t]
+      temp_j = Nj[,t]*(1 + r_j_error*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t]))
+      # take population size with process error from a lognormal distribution with SD observation
+      temp_j = sapply(temp_j, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
       temp_j[which(is.na(temp_j))] <- 0
       temp_j[which(temp_j < 0)] <- 0
       #print(temp_j)
