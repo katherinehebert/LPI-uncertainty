@@ -68,3 +68,4 @@ scripts/test_marima.R
 scripts/test_arima.R
 lpi_temp/
 checker_*
+truechecker*
