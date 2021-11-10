@@ -55,10 +55,16 @@ make_true <- function(
     
     # population i
     temp_i = Ni[t]*(1 + r_i[,t]*(1 - (Ni[t] + alpha_ij*Nj[t])/K[t])) 
+    # if NAs or 0, set to 0.
+    temp_i[which(is.na(temp_i))] <- 0
+    temp_i[which(temp_i < 0)] <- 0
     Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
     
     # population j
     temp_j = Nj[t]*(1 + r_j[,t]*(1 - (Nj[t] + alpha_ji*Ni[t])/K[t])) 
+    # if NAs or 0, set to 0.
+    temp_j[which(is.na(temp_j))] <- 0
+    temp_j[which(temp_j < 0)] <- 0
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
   }
   Ni <- Ni[,-1] # remove first column, which is only needed to start the calculation
@@ -72,6 +78,7 @@ make_true <- function(
       # population j
       temp_j = Nj[,t]*(1 + r_j[,t]*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t]))
       temp_j[which(is.na(temp_j))] <- 0
+      temp_j[which(temp_j < 0)] <- 0
       #print(temp_j)
       Nj <- cbind(Nj, temp_j)
     }
