@@ -13,23 +13,26 @@ theme_set(ggpubr::theme_pubr())
 
 ## COMMON PARAMS ---------------------------------------------------------------
 pop_pairs = 10
-steps = 10
+steps = 11
 obs = 0.05
 
 ## CARRYING CAPACITY SCENARIOS -------------------------------------------------
-K_increase = 100 + 4*c(0:9)
-K_stable = rep(100, 10)
-K_decline = 100 - 4*c(0:9)
+K_increase = 100 + 10*c(0:10)
+K_stable = rep(100, 11)
+K_decline = 100 - 5*c(0:10)
 # plot these!
 K_plot <- data.frame(
   time = 1:steps,
-  scenario = factor(c(rep("increase", steps), rep("stable", steps), rep("decline", steps)),
-                    levels = c("increase", "stable", "decline")),
+  scenario = factor(c(rep("increase", steps), 
+                      rep("stable", steps), 
+                      rep("decline", steps)),
+                    levels = rev(c("increase", "stable", "decline"))),
   K = c(K_increase, K_stable, K_decline)
 )
 ggplot(K_plot) +
   geom_line(aes(x = time, y = K, col = scenario)) +
-  labs(x = "", y = "Carrying capacity (K)", col = "Biodiversity change\n scenario") +
+  labs(x = "", y = "Carrying capacity (K)", 
+       col = "Biodiversity change\n scenario") +
   theme(legend.position = "right") +
   scale_x_continuous(breaks = c(1:10))
 ggsave("figures/carryingcapacity.png", width = 5.04, height = 3.38)
@@ -55,6 +58,7 @@ ggsave("figures/carryingcapacity.png", width = 5.04, height = 3.38)
 # scenario1I: growth, no covariance, no lag, high process error
 
 sim_names <- paste0("scenario1", LETTERS[1:9])
+
 K_scenarios <- rep(list(K_decline, K_stable, K_increase), 3)
 proc_error <- rep(c(0, 0.1, 0.2), each = 3)
 
