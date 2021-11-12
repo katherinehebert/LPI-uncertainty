@@ -69,3 +69,5 @@ scripts/test_arima.R
 lpi_temp/
 checker_*
 truechecker*
+*_infile.txt
+*_pops.txt
