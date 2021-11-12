@@ -40,6 +40,10 @@ sim_mech <- function(
   Ni <- as.matrix(rep(N0i, n_pairs))
   Nj <- as.matrix(rep(N0j, n_pairs))
   
+  # initialize matrix to store growth rates
+  dt_i <- matrix(NA, nrow = n_pairs, ncol = timesteps)
+  dt_j <- matrix(NA, nrow = n_pairs, ncol = timesteps)
+  
   # Nt+1_i = Nt_i + rNt_i * ((1 - Nt_i/K_i) + alpha_ji*Nt_j/K_j
   # calculate population sizes
   for(t in 1:timesteps){
@@ -66,12 +70,17 @@ sim_mech <- function(
     temp_j[which(is.na(temp_j))] <- 0
     temp_j[which(temp_j < 0)] <- 0
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
+    
+    ## save generated growth rates 
+    dt_i[,t] <- r_i_error
+    dt_j[,t] <- r_j_error
   }
 
   # introduce lag to populations j
   if(lag_value != 0){
     # print("running") # to test the loop
     Nj <- Nj[,1:(lag_value + 1)]
+    dt_j <- matrix(NA, nrow = n_pairs, ncol = timesteps+lag_value)
     
     for(t in c(lag_value + 1):timesteps){
       
@@ -86,13 +95,22 @@ sim_mech <- function(
       temp_j[which(temp_j < 0)] <- 0
       #print(temp_j)
       Nj <- cbind(Nj, temp_j)
+      
+      ## save generated growth rates 
+      dt_j[,t] <- r_j_error
     }
+
   }
   
   # remove extra steps from introduced lag
   timesteps <- timesteps - lag_value
   Ni <- Ni[,c(1:timesteps)]
   Nj <- Nj[,c(1:timesteps)]
+  dt_j <- dt_j[,c(1:timesteps)]
+  
+  # save growth rates
+  dt <- rbind(dt_i, dt_j)
+  saveRDS(dt, paste0("simulations/", simname, "_rerror.RDS"))
   
   # plot results -----------------------------------------------------------------
   
