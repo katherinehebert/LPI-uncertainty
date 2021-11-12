@@ -1,0 +1,268 @@
+---
+title: 'Source(s) of bias in the LPI calculation'
+output: html_document
+---
+
+A demonstration with the simplest scenario in the study: declines, stable, and growth without covariance or process error.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(readr)
+library(here)
+
+theme_set(theme_linedraw())
+
+pal_compare <- c("raw" = "blue", "predicted" = "red")
+
+temp <- paste0("scenario1", LETTERS[1:3])
+
+```
+
+```{r load-results, echo = FALSE}
+## GROWTH RATES ####
+
+# import the lambdas (dt) from log-ratio of raw population sizes
+df <- lapply(temp, function(x) {readRDS(here::here(paste0("outputs/",x,"_l_dtchain.RDS")))})
+names(df) <- temp
+df <- bind_rows(df, .id = "scenario")
+
+# import lambdas from the rlpi calculation ("predicted")
+lambdas <- lapply(temp, function(x) {
+  read_csv(here::here(paste0("outputs/rlpi/",x,"_pops_lambda.csv"))) %>%
+    pivot_longer(cols = 4:ncol(.), names_to = "time", values_to = "dt_rlpi")
+  }
+  )
+names(lambdas) <- temp
+lambdas <- bind_rows(lambdas, .id = "scenario")
+lambdas$time <- as.integer(lambdas$time) - 1969
+# add these lambdas to the dataset
+df$dt_rlpi <- lambdas$dt_rlpi
+
+df[which(df$time == 1), "dt_chain"] <- 0
+df[which(df$time == 1), "dt_rlpi"] <- 0
+```
+
+
+## Step 1: Population time series
+
+```{r}
+ggplot(df, aes(x = time, y = N, group = popID)) +
+  geom_line(lwd = .2) +
+  facet_wrap(~scenario)
+```
+
+
+## Step 2:  Smoothing time series
+
+```{r, results='hide'}
+# calculate GAMs (code adapted from CalcLPI.R lines 215-220ish)
+gam_lpi <- function(x){
+  PopNLog <- log(x$N)
+  YearPop = 1:11
+  SmoothParm = round(length(x$N)/2)
+  model <- mgcv::gam(PopNLog ~ s(YearPop, k = SmoothParm), fx = TRUE)
+}
+
+pops <- df %>% group_by(scenario, popID) %>% group_split()
+smoothed <- lapply(pops, gam_lpi)
+
+# apply model appraisal to check validity
+pdf(file = here("outputs/gam_Appraisals.pdf"))
+  lapply(smoothed, gratia::appraise)
+dev.off()
+
+# extract fitted values and residuals
+df$N_fitted <- lapply(smoothed, fitted.values) %>% unlist()
+df$N_resids <- lapply(smoothed, resid) %>% unlist()
+```
+
+## Summary {.tabset .tabset-pills}
+
+### Smoothed time series
+
+```{r}
+ggplot(df, aes(group = popID)) +
+  geom_line(aes(x = time, y = log(N)), lwd = .1, alpha = .5) +
+  geom_line(aes(x = time, y =  N_fitted), lwd = .2) +
+  facet_wrap(~scenario) +
+  labs(y = "Abundance (log)", x = "", title = "Smoothed time series")
+```
+
+### Fit vs. data
+
+```{r}
+ggplot(df) +
+  geom_density(aes(x = N, fill = "Raw"), alpha = .2, lwd = .1) +
+  geom_density(aes(x = exp(N_fitted), fill = "Fitted (GAM)"), alpha = .2, lwd = .1) +
+  facet_wrap(~scenario, scales = "free") +
+  labs(x = "Abundance", fill = "Source", title = "Fitted abundances vs. raw data")
+```
+
+### Residuals
+
+```{r}
+ggplot(df) +
+  geom_density(aes(x = N_resids, fill = scenario), alpha = .2, lwd = .1) +
+  facet_wrap(~scenario, scales = "free") +
+  labs(x = "Residuals", fill = "Scenario", title = "GAM residuals")
+```
+
+## {-}
+
+## Step 3: Calculating growth rates (log-ratio)
+
+## Summary {.tabset .tabset-pills}
+
+### Growth rates
+
+```{r}
+ggplot(data = df, aes(x = time, group = popID))+
+  geom_line(aes(y = dt_chain), 
+                 alpha = .3, lwd = .1) +
+  geom_line(aes(y = dt_rlpi), 
+                 alpha = 1, lwd = .1) +
+  scale_fill_manual(values = pal_compare) + 
+  scale_color_manual(values = pal_compare) +
+  facet_wrap(~scenario) +
+  labs(y = "Annual growth rate", x ="")
+```
+
+### Compare distributions
+
+```{r}
+df %>%
+  ggplot()+
+  geom_histogram(aes(x = dt_chain, fill = "raw", col = "raw"), 
+                 alpha = .3, lwd = .1) +
+  geom_histogram(aes(x = dt_rlpi, fill = "predicted", col = "predicted"), 
+                 alpha = .3, lwd = .1) +
+  scale_fill_manual(values = pal_compare) + 
+  scale_color_manual(values = pal_compare) +
+  facet_wrap(~scenario) +
+  labs(col = "Source", fill = "Source", x = "Annual growth rate")
+```
+
+### Boxplot comparison
+
+```{r}
+test <- pivot_longer(df, 
+                     names_to = "source", values_to = "DT", 
+                     cols = c("dt_rlpi", "dt_chain"))
+ggplot(test) + 
+  geom_boxplot(aes(x = source, y = DT)) + 
+  facet_wrap(~scenario) +
+  labs(y = "Growth rate", x = "")
+```
+
+
+## {-}
+
+## Step 4: Taking the mean growth rate per time step
+
+```{r}
+#### MEAN DT (from rlpi) ####
+
+dtbar <- lapply(temp, function(x) {
+  read_csv(here::here(paste0("outputs/rlpi/",x,"_pops_dtemp.csv"))) %>%
+    pivot_longer(cols = everything(), names_to = "time", values_to = "mu_rlpi")
+  }
+  )
+names(dtbar) <- temp
+dtbar <- bind_rows(dtbar, .id = "scenario")
+dtbar$time <- as.integer(dtbar$time) - 1969
+dtbar[which(dtbar$time == 1), "mu_rlpi"] <- 0
+
+
+# get geometric mean dt of each distribution
+means <- 
+  group_by(df, scenario, pop, time) %>%
+  # per "species"
+  summarise(mu_raw = EnvStats::geoMean(exp(dt_chain), na.rm = TRUE) 
+            ) %>% ungroup() %>%
+  #"overall"
+  group_by(scenario, time) %>%
+  summarise(mu_raw = log(EnvStats::geoMean(mu_raw, na.rm = TRUE)))
+means <- inner_join(means, dtbar)
+```
+
+## Summary {.tabset .tabset-pills}
+
+### Mean growth rate over time
+
+```{r}
+# the mean across populations + species is where the disconnect happens!!!!!!
+ggplot(means, aes(x = time))+
+  geom_line(aes(y = mu_raw, col = "raw")) +
+  geom_line(aes(y = mu_rlpi, col = "predicted")) +
+  scale_fill_manual(values = pal_compare) + 
+  scale_color_manual(values = pal_compare) +
+  facet_wrap(~scenario) +
+  labs(col = "Source", fill = "Source", x = "Annual growth rate")
+```
+
+### Compare distributions
+
+```{r}
+ggplot(means, aes(x = time))+
+  geom_density(aes(x = mu_raw, col = "raw")) +
+  geom_density(aes(x = mu_rlpi, col = "predicted")) +
+  scale_fill_manual(values = pal_compare) + 
+  scale_color_manual(values = pal_compare) +
+  facet_wrap(~scenario, scale = "free_y") +
+  labs(col = "Source", fill = "Source", x = "Annual growth rate")
+```
+
+### Boxplot comparison
+
+```{r}
+test <- pivot_longer(means, 
+                     names_to = "source", values_to = "mu", 
+                     cols = c("mu_rlpi", "mu_raw"))
+ggplot(test) + 
+  geom_boxplot(aes(x = source, y = mu)) + 
+  facet_wrap(~scenario) +
+  labs(y = "Mean growth rate", x = "")
+```
+
+## {-}
+
+## Calculating the Living Planet Index (baseline = 1)
+
+```{r}
+# function to calculate LPI from mean dt
+calclpi <- function(dt){
+  # calculate index value
+  lpi = c(1) # initial value is 1 
+  for(i in 2:length(dt)){
+    lpi[i] <- lpi[i-1]*10^dt[i] }
+  return(lpi)
+}
+
+means_ls <- means %>% 
+  group_by(scenario) %>%
+  group_split() %>% 
+  lapply(tibble::as_data_frame)
+
+for(i in 1:length(means_ls)){
+  means_ls[[i]]$lpi_raw <- calclpi(means_ls[[i]]$mu_raw)
+}
+means <- bind_rows(means_ls)
+
+
+all_results <- readRDS("~/Documents/GitHub/LPI-sensitivity/outputs/all_results.RDS")
+finals <- left_join(means, all_results)
+```
+
+```{r}
+ggplot(finals, aes(x = time)) +
+  geom_line(aes(y = lpi_raw, col = "raw")) +
+  geom_line(aes(y = LPI_final, col = "predicted")) +
+  geom_line(aes(y = LPI_true, col = "black"), lty = 2) +
+  facet_wrap(~scenario) +
+  scale_color_manual(values = pal_compare)
+```
+
