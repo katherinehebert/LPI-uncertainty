@@ -28,9 +28,9 @@ cute_theme <- bs_theme(
 )
 
 ## CARRYING CAPACITY SCENARIOS ##  ------
-K_increase = 100 + 4*c(0:9)
-K_stable = rep(100, 10)
-K_decline = 100 - 4*c(0:9)
+K_increase = 100 + 5*c(0:10)
+K_stable = rep(100, 11)
+K_decline = 100 - 2.5*c(0:10)
 K_list = list(K_decline, K_stable, K_increase)
 
 # Define UI for application that draws a histogram
@@ -100,7 +100,7 @@ server <- function(input, output) {
         sim_list <- list()
         for(i in 1:3){
             sim_list[[i]] <- sim_mech(
-            n_pairs = 10, timesteps = 10,
+            n_pairs = 10, timesteps = 11,
             N0i = 100, N0j = 100,
             lambda_i = input$lambda_i, 
             lambda_j = input$lambda_j,
