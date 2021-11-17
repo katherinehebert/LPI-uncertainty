@@ -25,11 +25,3 @@ for(i in 1:length(scenarios)){
   
   saveRDS(scenario_dt, paste0("outputs/", names(scenarios)[i], "_l_dtchain.RDS"))
 }
-# 
-# 
-# ## compare each step of the way
-# 
-# lambdas <- read_csv("outputs/rlpi/scenario1A_pops_lambda.csv") 
-# 
-# hist(scenario_dt$dt_chain, xlim = c(-1,1))
-# hist(unlist(lambdas[5:ncol(lambdas)]),add = TRUE)
