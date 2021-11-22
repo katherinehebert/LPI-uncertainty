@@ -54,33 +54,33 @@ sim_mech <- function(
     
     # population i
     temp_i = Ni[,t]*(1 + r_i_error*(1 - (Ni[,t] + alpha_ij*Nj[,t])/K[t]))
-    temp_i = sapply(temp_i, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
+    #temp_i = sapply(temp_i, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
     
     # if NAs or 0, set to 0.
     temp_i[which(is.na(temp_i))] <- 0
     temp_i[which(temp_i < 0)] <- 0
     Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
-    
+     
     # population j
     temp_j = Nj[,t]*(1 + r_j_error*(1 - (Nj[,t] + alpha_ji*Ni[,t])/K[t]))
     # take population size with process error from a lognormal distribution with SD observation
-    temp_j = sapply(temp_j, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
-    
+    #temp_j = sapply(temp_j, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
+     
     # if NAs or 0, set to 0.
     temp_j[which(is.na(temp_j))] <- 0
     temp_j[which(temp_j < 0)] <- 0
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
-    
-    ## save generated growth rates 
+
+    ## save generated growth rates
     dt_i[,t] <- r_i_error
     dt_j[,t] <- r_j_error
   }
-
+  
   # introduce lag to populations j
   if(lag_value != 0){
     # print("running") # to test the loop
     Nj <- Nj[,1:(lag_value + 1)]
-    dt_j <- matrix(NA, nrow = n_pairs, ncol = timesteps+lag_value)
+    dt_j <- matrix(NA, nrow = n_pairs, ncol = timesteps)
     
     for(t in c(lag_value + 1):timesteps){
       
@@ -90,7 +90,7 @@ sim_mech <- function(
       # population j
       temp_j = Nj[,t]*(1 + r_j_error*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t]))
       # take population size with process error from a lognormal distribution with SD observation
-      temp_j = sapply(temp_j, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
+      #temp_j = sapply(temp_j, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
       temp_j[which(is.na(temp_j))] <- 0
       temp_j[which(temp_j < 0)] <- 0
       #print(temp_j)
@@ -102,14 +102,19 @@ sim_mech <- function(
 
   }
   
+  # apply observation error on the calculated population sizes
+  # pick number of lognormal distribution with a mean of N and an sd of observation error
+  Ni <- apply(Ni, 1:2, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
+  Nj <- apply(Nj, 1:2, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
+  
   # remove extra steps from introduced lag
   timesteps <- timesteps - lag_value
-  Ni <- Ni[,c(1:timesteps)]
-  Nj <- Nj[,c(1:timesteps)]
+  Ni <- Ni[,c(2:(timesteps+1))]
+  Nj <- Nj[,c(2:(timesteps+1))]
   dt_j <- dt_j[,c(1:timesteps)]
   
   # save growth rates
-  dt <- rbind(dt_i, dt_j)
+  dt <- list("dt_i" = dt_i, "dt_j" = dt_j)
   saveRDS(dt, paste0("simulations/", simname, "_rerror.RDS"))
   
   # plot results -----------------------------------------------------------------
