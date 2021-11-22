@@ -17,9 +17,9 @@ steps = 11
 obs = 0.05
 
 ## CARRYING CAPACITY SCENARIOS -------------------------------------------------
-K_increase = 100 + 10*c(0:10)
+K_increase = 100 + 5*c(0:10)
 K_stable = rep(100, 11)
-K_decline = 100 - 5*c(0:10)
+K_decline = 100 - 2.5*c(0:10)
 # plot these!
 K_plot <- data.frame(
   time = 1:steps,
@@ -58,7 +58,6 @@ ggsave("figures/carryingcapacity.png", width = 5.04, height = 3.38)
 # scenario1I: growth, no covariance, no lag, high process error
 
 sim_names <- paste0("scenario1", LETTERS[1:9])
-
 K_scenarios <- rep(list(K_decline, K_stable, K_increase), 3)
 proc_error <- rep(c(0, 0.1, 0.2), each = 3)
 
@@ -69,7 +68,7 @@ for(i in 1:length(sim_names)){
     N0i = 100, N0j = 100,
     lambda_i = 1.5, lambda_j = 1.5,
     alpha_ij = 0, alpha_ji = 0,
-    process = proc_error[i], 
+    process = proc_error[i],
     observation = obs,
     K = K_scenarios[[i]],
     lag_value = 0
@@ -207,6 +206,7 @@ for(i in 1:length(sim_names)){
 sim_names <- paste0("scenario4", LETTERS[1:18])
 K_scenarios <- rep(list(K_decline, K_stable, K_increase), 6)
 alphas <- rep(list(c(-0.1, 0.1), c(-0.2, 0.2)), each = 9)
+proc_error <- rep(rep(c(0, 0.1, 0.2), each = 3), 2)
 
 for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
