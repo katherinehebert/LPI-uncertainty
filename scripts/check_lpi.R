@@ -17,6 +17,9 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
+# source customised LPI function
+source('~/Documents/GitHub/LPI-sensitivity/scripts/LPIMain.R')
+
 theme_set(theme_linedraw())
 
 lpi_checker <- function(scenario_name){
@@ -42,17 +45,22 @@ lpi_checker <- function(scenario_name){
   # Create infile for Canada populations
   checker_infile_name <- create_infile(simw, 
                                        index_vector = index_vector, 
-                                       name = "checker", 
+                                       name = scenario_name, 
                                        start_col_name = "X1970", 
-                                       end_col_name = "X1979")
+                                       end_col_name = "X1980"
+                                       )
   
   
   # index with 1000 bootstraps (1137 pops) without weightings 
-  lpi <- LPIMain(checker_infile_name, 
+  lpi <- LPIMain_custom(checker_infile_name, 
                  REF_YEAR = 1970, PLOT_MAX = 1980, 
                  BOOT_STRAP_SIZE = 1000, 
                  use_weightings=0, 
-                 VERBOSE=FALSE, save_plots = 0, plot_lpi = 0)
+                 VERBOSE=FALSE, 
+                 save_plots = 0, 
+                 plot_lpi = 0,
+                 basedir = "outputs/rlpi/",
+                 scenario_name = scenario_name)
   # Remove NAs (trailing years with no data)
   lpi <- lpi[complete.cases(lpi), ]
   lpi$time <- rownames(lpi) %>% as.numeric()
@@ -115,13 +123,15 @@ lpi_checker <- function(scenario_name){
 
 
 # get all scenario names
-sim_names <- c(paste0("scenario1", LETTERS[1:9]),
-              paste0("scenario2", LETTERS[1:18]),
-              paste0("scenario3", LETTERS[1:18]),
-              paste0("scenario4", LETTERS[1:18]),
-              paste0("scenario5", LETTERS[1:18]),
-              paste0("scenario6", LETTERS[1:18]),
-              paste0("scenario7", LETTERS[1:18]))
+sim_names <- c(
+  paste0("scenario1", LETTERS[1:9]),
+  paste0("scenario2", LETTERS[1:18]),
+  paste0("scenario3", LETTERS[1:18]),
+  paste0("scenario4", LETTERS[1:18]),
+  paste0("scenario5", LETTERS[1:18]),
+  paste0("scenario6", LETTERS[1:18]),
+  paste0("scenario7", LETTERS[1:18])
+  )
 # apply to all simulations
 lapply(sim_names, lpi_checker)              
 
@@ -141,8 +151,8 @@ lpi_truechecker <- function(scenario_name){
   simw <- pivot_wider(sim, names_from = time, values_from = N)
   
   # create ID and Binomial columns
-  simw$ID <- 1:2
-  simw$Binomial <- LETTERS[1:2]
+  simw$ID <- 1:20
+  simw$Binomial <- LETTERS[1:20]
   
   # Constructing infiles from a populations table
   
@@ -152,9 +162,10 @@ lpi_truechecker <- function(scenario_name){
   # Create infile for Canada populations
   checker_infile_name <- create_infile(simw, 
                                        index_vector = index_vector, 
-                                       name = "truechecker", 
+                                       name = paste0(scenario_name, "_true"), 
                                        start_col_name = "X1970", 
-                                       end_col_name = "X1979")
+                                       end_col_name = "X1980"
+                                       )
   
   
   # index with 1000 bootstraps (1137 pops) without weightings 
@@ -162,7 +173,8 @@ lpi_truechecker <- function(scenario_name){
                  REF_YEAR = 1970, PLOT_MAX = 1980, 
                  BOOT_STRAP_SIZE = 1000, 
                  use_weightings=0, 
-                 VERBOSE=FALSE, save_plots = 0, plot_lpi = 0)
+                 VERBOSE=FALSE, save_plots = 0, plot_lpi = 0,
+                 basedir = "outputs/rlpi/")
   # Remove NAs (trailing years with no data)
   lpi <- lpi[complete.cases(lpi), ]
   lpi$time <- rownames(lpi) %>% as.numeric()
@@ -213,13 +225,13 @@ lpi_truechecker <- function(scenario_name){
 }
 
 # get all scenario names
-sim_names <- c(paste0("scenario1", LETTERS[1:9]),
-               paste0("scenario2", LETTERS[1:18]),
-               paste0("scenario3", LETTERS[1:18]),
-               paste0("scenario4", LETTERS[1:18]),
-               paste0("scenario5", LETTERS[1:18]),
-               paste0("scenario6", LETTERS[1:18]),
-               paste0("scenario7", LETTERS[1:18]))
-lapply(paste0("scenario2", LETTERS[11:18]), lpi_truechecker)
-
-# fails: A, D, G, J, M, P - to do: figure out why
+sim_names <- c(
+  paste0("scenario1", LETTERS[1:9]),
+  paste0("scenario2", LETTERS[1:18]),
+  paste0("scenario3", LETTERS[1:18]),
+  paste0("scenario4", LETTERS[1:18]),
+  paste0("scenario5", LETTERS[1:18]),
+  paste0("scenario6", LETTERS[1:18]),
+  paste0("scenario7", LETTERS[1:18])
+)
+lapply(sim_names, lpi_truechecker)
