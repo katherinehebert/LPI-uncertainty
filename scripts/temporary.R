@@ -263,7 +263,11 @@ compare_precision <- function(simID){
   dt_chain$time <- (dt_chain$time + 1969) %>% as.character()
   
   # from bootstrapped LPI values 
-  bootstrap <- readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/outputs/rlpi/scenario", simID, "_bootstrap_rlpi.rds"))
+  bootstrap <- readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/outputs/rlpi/scenario", simID, "_bootstrap_rlpi.RDS"))
+  
+  # import true LPI values (no error)
+  true <- readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/outputs/scenario", simID, "_true_rlpi.RDS"))
+  true$time = as.character(true$time)
   
   # calculate LPI for each population
   
@@ -342,7 +346,11 @@ compare_precision <- function(simID){
     "q500_chain" = apply(chain_w, 2, quantile, probs = .5),
     "q975_chain" = apply(chain_w, 2, quantile, probs = .975)
   )
+  # join with true lpi dataset
+  df <- left_join(df, subset(true, select = c(time, LPI_final)))
+  df <- rename(df, "LPI_final_true" = "LPI_final")
   
+  # do the CI capture the underlying mean/median/truth?
   df$mean_within_rlpiCI <- NA
   df$median_within_rlpiCI <- NA
   for(i in 1:nrow(df)){
@@ -354,6 +362,15 @@ compare_precision <- function(simID){
     if(df$q500_chain[i] >= df$q025_rlpi[i] & df$q500_chain[i] <= df$q975_rlpi[i]){  
       df$median_within_rlpiCI[i] = "Success"
     } else df$median_within_rlpiCI[i] = "Failure"
+  }
+  
+  # determine whether the true value is within the LPI
+  df$true_within_rlpiCI <- NA
+  for(i in 1:nrow(df)){
+    # determine whether chain lpi value is within the LPI intervals
+    if(df$LPI_final_true[i] >= df$q025_rlpi[i] & df$LPI_final_true[i] <= df$q975_rlpi[i]){  
+      df$true_within_rlpiCI[i] = "Success"
+    } else df$true_within_rlpiCI[i] = "Failure"
   }
   
   # determine difference between mean and the CI limits
@@ -371,7 +388,18 @@ compare_precision <- function(simID){
   # if yes, yes
   # if no, is it below the CI_low? if yes, by how much?
   # if no, is it above the CI_high? if yes, by how much?
-  
+  # determine difference between mean and the CI limits
+  df$true_diff_rlpiCI_low <- NA
+  df$true_diff_rlpiCI_high <- NA
+  for(i in 1:nrow(df)){
+    if(df$true_within_rlpiCI[i] == "Failure"){
+      if(df$LPI_final_true[i] < df$q025_rlpi[i]){
+        df$true_diff_rlpiCI_low[i] <- df$q025_rlpi[i] - df$LPI_final_true[i]
+      } else if(df$LPI_final_true[i] > df$q975_rlpi[i]) {
+        df$true_diff_rlpiCI_high[i] <- df$LPI_final_true[i] - df$q975_rlpi[i] 
+      }
+    } else next
+  }
   
   # calculate interval widths & difference in interval width
   df$rlpiCI_width <- df$q975_rlpi - df$q025_rlpi
@@ -385,4 +413,16 @@ compare_precision("1B")
 compare_precision("1C")
 compare_precision("2A")
 compare_precision("2B")
-compare_precision("2C")
+compare_precision("4A")
+
+# get all scenario names
+sim_ids <- c(
+  paste0("1", LETTERS[1:9]),
+  paste0("2", LETTERS[1:18]),
+  paste0("3", LETTERS[1:18]),
+  paste0("4", LETTERS[1:18]),
+  paste0("5", LETTERS[1:18]),
+  paste0("6", LETTERS[1:18]),
+  paste0("7", LETTERS[1:18])
+)
+lapply(sim_ids, compare_precision)
