@@ -110,22 +110,6 @@ precision_plot <- function(df_subset, comparison_variable, colour_variable = "di
          fill = colour_variable) +
  theme(legend.position = "bottom") 
 }
-
-
-precision_success_plot <- function(df_subset, comparison_variable){
-  
-  ggplot(data = df_subset, 
-         aes(x = get(comparison_variable), 
-             fill = true_within_rlpiCI)) +
-    geom_bar(stat = "count", position = "stack") +
-    labs(y = "Frequency", 
-         x = "", 
-         title = "Ability to capture the truth",
-         fill = "True LPI within CI?") +
-    theme(legend.position = "bottom") +
-    scale_fill_manual(values = c("#FB5B5A", "#003F5C"))
-}
-
 ```
 
 ***
@@ -278,13 +262,9 @@ b <- precision_plot(filter(df_sc1, Process_error == "0"), "direction") +
 a + b
 ```
 
-```{r}
-precision_success_plot(filter(df_sc1, Process_error == "0"), "direction") 
-```
-
 
 ```{r, include = FALSE, echo = FALSE}
-(d + labs(title = "Trends")) / (a + b + c)
+(d + labs(title = "Trends")) / (a + b)
 ggsave("~/Documents/GitHub/LPI-sensitivity/figures/fig2_direction.png", width = 6.7, height = 7.74)
 ```
 
@@ -295,13 +275,10 @@ ggsave("~/Documents/GitHub/LPI-sensitivity/figures/fig2_direction.png", width = 
 a <- accuracy_plot(filter(df_sc1, Process_error == "0.1"), "direction") + 
   theme(legend.position = "none")
 b <- precision_plot(filter(df_sc1, Process_error == "0.1"), "direction") + 
-  theme(legend.position = "none") + coord_cartesian(ylim = c(0, 100))
+  theme(legend.position = "none") 
 a + b
 ```
 
-```{r}
-precision_success_plot(filter(df_sc1, Process_error == "0.1"), "direction") 
-```
 
 
 ### Process error = 0.2
@@ -310,13 +287,10 @@ precision_success_plot(filter(df_sc1, Process_error == "0.1"), "direction")
 a <- accuracy_plot(filter(df_sc1, Process_error == "0.2"), "direction") + 
   theme(legend.position = "none")
 b <- precision_plot(filter(df_sc1, Process_error == "0.2"), "direction") + 
-  theme(legend.position = "none") +coord_cartesian(ylim = c(0, 100))
+  theme(legend.position = "none") 
 a + b
 ```
 
-```{r}
-precision_success_plot(filter(df_sc1, Process_error == "0.2"), "direction") 
-```
 
 
 ### Summary table
@@ -358,105 +332,23 @@ ggplot(sc1)+
   labs(col = "Source", fill = "Source")
 ```
 
-```{r clean-this-up, include= FALSE, eval=FALSE}
-# import the lambdas (dt) from log-ratio of raw population sizes
-sc1_dt <- lapply(temp, function(x) {readRDS(here::here(paste0("outputs/",x,"_l_dtchain.RDS")))})
-names(sc1_dt) <- temp
-sc1_dt <- bind_rows(sc1_dt, .id = "scenario")
-sc1$dt_chain <- sc1_dt$dt_chain
-
-# import lambdas from the rlpi calculation
-lambdas <- lapply(temp, function(x) {
-  read_csv(here::here(paste0("outputs/rlpi/",x,"_pops_lambda.csv"))) %>%
-    pivot_longer(cols = 4:ncol(.), names_to = "time", values_to = "rlpi")
-  }
-  )
-names(lambdas) <- temp
-lambdas <- bind_rows(lambdas, .id = "scenario")
-sc1_dt$dt_rlpi <- lambdas$rlpi
-
-dtemp <- lapply(temp, function(x) {
-  read_csv(here::here(paste0("outputs/rlpi/",x,"_pops_dtemp.csv"))) %>%
-    pivot_longer(cols = everything(), names_to = "time", values_to = "mu_rlpi")
-  }
-  )
-names(dtemp) <- temp
-dtemp <- bind_rows(dtemp, .id = "scenario")
-
-# remove rows for first time step, since this is a baseline value
-#sc1 <- filter(sc1, time != 1)
-
-# get geometric mean dt of each distribution
-means <- group_by(sc1_dt, scenario, pop, time) %>%
-  # per "species"
-  summarise(mu_raw = EnvStats::geoMean(exp(dt_chain), na.rm = TRUE) # log-ratio of the raw population sizes
-            ) %>% ungroup() %>%
-  #"overall"
-  group_by(scenario, time) %>%
-  summarise(mu_raw = EnvStats::geoMean(mu_raw, na.rm = TRUE))
-
-means_overall <- group_by(sc1_dt, scenario, pop) %>%
-  summarise(mu_raw = EnvStats::geoMean(exp(dt_chain), na.rm = TRUE),
-            mu_pred = EnvStats::geoMean(exp(dt_rlpi), na.rm = TRUE),
-            ) %>% ungroup() %>%
-  group_by(scenario) %>%
-  summarise(
-    mu_raw = log(EnvStats::geoMean(mu_raw)),
-    mu_pred = log(EnvStats::geoMean(mu_pred))
-  )
-
-# assign these rlpi dt to the data frame
-means$mu_rlpi <- 10^dtemp$mu_rlpi
-means[which(means$time == 1), "mu_rlpi"] = 1
-
-ggplot(sc1_dt)+
-  geom_histogram(aes(x = dt_chain, fill = "raw", col = "raw"), 
-               alpha = .3, lwd = .1) +
-    geom_histogram(aes(x = dt_rlpi, fill = "predicted", col = "predicted"), 
-               alpha = .3, lwd = .1) +
-  geom_vline(data = means_overall, aes(xintercept = mu_raw, 
-                               col = "raw"), lwd = .5) +
-  geom_vline(data = means_overall, aes(xintercept = mu_pred, 
-                               col = "predicted"), lwd = .5) +
-  scale_fill_manual(values = pal_compare) + 
-  scale_color_manual(values = pal_compare) +
-  facet_wrap(~scenario) +
-  labs(col = "Source", fill = "Source", x = "Annual growth rate")
-
-# the mean across populations + species is where the disconnect happens!!!!!!
-ggplot(means, aes(x = time))+
-  geom_line(aes(y = mu_raw, col = "raw")) +
-  geom_line(aes(y = mu_rlpi, col = "predicted")) +
-  scale_fill_manual(values = pal_compare) + 
-  scale_color_manual(values = pal_compare) +
-  facet_wrap(~scenario) +
-  labs(col = "Source", fill = "Source", x = "Annual growth rate")
-
-
-ggplot(sc1)+
-  geom_vline(data = means, aes(xintercept = mu_raw, 
-                               col = "raw"), lwd = .5) +
-  geom_vline(data = means, aes(xintercept = mu_pred, 
-                               col = "predicted"), lwd = .5) +
-  scale_fill_manual(values = pal_compare) + 
-  scale_color_manual(values = pal_compare) +
-  facet_wrap(~scenario) +
-  labs(col = "Source", fill = "Source", x = "Annual growth rate")
-
-test <- pivot_longer(sc1, 
-                     names_to = "source", values_to = "DT", 
-                     cols = c("dt_rlpi", "dt_chain"))
-ggplot(test) + 
-  geom_boxplot(aes(x = source, y = DT)) + 
-  facet_wrap(~scenario)
-```
-
-
 ## {-}
 
-    The LPI is sensitive to direction of change:
-    * declining trends are overestimated by the LPI 
-    * declining trends are estimated with lower precision
+```{r, fig.cap="Ability to capture the true LPI", fig.width=7, fig.height = 5}
+success = df_sc1 %>% group_by(direction, Process_error) %>%
+  count(true_within_rlpiCI) %>%
+  mutate(perc = n/sum(n)) %>% 
+  ungroup() %>%
+  filter(true_within_rlpiCI == "Success")
+  
+success %>% 
+  ggplot() +
+  geom_tile(aes(x = direction, y = Process_error, fill = perc)) +
+  scale_fill_distiller(palette = "RdYlGn", direction = 1, limits = c(0,1)) +
+  labs(fill = "Success rate", y = "", x = "")
+
+success %>% kable() %>% kable_styling(bootstrap_options = "striped")
+```
 
 
 ```{r, echo = FALSE, include = FALSE}
@@ -521,7 +413,7 @@ kbl(params, booktabs = TRUE, caption = "Simulation parameters") %>%
 # combine into one df for later
 df_sc2 <- df[grepl("^scenario2", df$scenario), ]
 df_sc3 <- df[grepl("^scenario3", df$scenario), ]
-df_cov <- rbind(df_sc2, df_sc3)
+df_cov <- rbind(df_sc1, df_sc2, df_sc3)
 ```
 
 ### Process error = 0
@@ -647,6 +539,24 @@ df_cov %>% filter(Process_error == "0") %>%
             se_precision = round(se(CI_diff),3)) %>% 
   kableExtra::kable()
 ```
+
+```{r, fig.cap="Ability to capture the true LPI", fig.height=5, fig.width=9}
+success = df_cov %>% group_by(direction, interaction, Process_error) %>%
+  count(true_within_rlpiCI) %>%
+  mutate(perc = n/sum(n)) %>% 
+  ungroup() %>%
+  filter(true_within_rlpiCI == "Success")
+  
+success %>% 
+  ggplot() +
+  geom_tile(aes(x = direction, y = interaction, fill = perc)) +
+  facet_wrap(~Process_error, labeller = label_both) + 
+  scale_fill_distiller(palette = "RdYlGn", direction = 1, limits = c(0,1)) +
+  labs(fill = "Success rate", y = "", x = "")
+
+success %>% kable() %>% kable_styling(bootstrap_options = "striped")
+```
+
 
     The LPI is sensitive to covariance when trends are declining:  
     
@@ -811,7 +721,8 @@ a <- accuracy_plot(dplyr::filter(df_lag, Process_error == "0"),
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
                     facet_wrap(~interaction, nrow = 1) + #labs(x = "Lag") +
-  theme(legend.position = "none") + scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
+  theme(legend.position = "none") + scale_color_manual(values = pal_lags) + 
+  scale_fill_manual(values = pal_lags)
 b <- precision_plot(dplyr::filter(df_lag, Process_error == "0"), 
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
@@ -832,16 +743,17 @@ df_lag <- dplyr::filter(df, interaction != "No Synchrony")
 a <- accuracy_plot(dplyr::filter(df_lag, Process_error == "0.1"), 
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
-                    facet_wrap(~interaction) + #labs(x = "Lag") +
-  theme(legend.position = "top") + scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
+                    facet_wrap(~interaction, nrow = 1) + 
+  theme(legend.position = "top") + scale_color_manual(values = pal_lags) + 
+  scale_fill_manual(values = pal_lags)
 b <- precision_plot(dplyr::filter(df_lag, Process_error == "0.1"), 
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
-                    facet_wrap(~interaction) + 
-  #labs(x = "Lag") +
-  #coord_cartesian(ylim = c(-2,30)) +
-  theme(legend.position = "top") + scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
-a + b
+                    facet_wrap(~interaction, nrow= 1) + 
+  theme(legend.position = "top") + 
+  scale_color_manual(values = pal_lags) + 
+  scale_fill_manual(values = pal_lags)
+a / b
 # plotly::ggplotly(a)
 # plotly::ggplotly(b)
 ```
@@ -854,14 +766,12 @@ df_lag <- dplyr::filter(df, interaction != "No Synchrony")
 a <- accuracy_plot(dplyr::filter(df_lag, Process_error == "0.2"), 
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
-                    facet_wrap(~interaction) + #labs(x = "Lag") +
+                    facet_wrap(~interaction, nrow = 1) + 
   theme(legend.position = "top")+ scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
 b <- precision_plot(dplyr::filter(df_lag, Process_error == "0.2"), 
                    comparison_variable = "direction", 
                    colour_variable = "Lag") + 
-                    facet_wrap(~interaction) + 
-  #labs(x = "Lag") +
-  #coord_cartesian(ylim = c(-2,30)) +
+                    facet_wrap(~interaction, nrow = 1) + 
   theme(legend.position = "top") + scale_color_manual(values = pal_lags) + scale_fill_manual(values = pal_lags)
 a / b
 # plotly::ggplotly(a)
@@ -916,3 +826,37 @@ df_lag %>%
             se_precision = round(se(CI_diff),3)) %>% 
   kableExtra::kable()
 ```
+
+
+```{r, fig.height = 9, fig.width = 9}
+success = df_lag %>% group_by(direction, interaction, Lag, Process_error) %>%
+  count(true_within_rlpiCI) %>%
+  mutate(perc = n/sum(n)) %>% 
+  ungroup() %>%
+  filter(true_within_rlpiCI == "Success")
+  
+  
+success %>% 
+  ggplot() +
+  geom_tile(aes(x = direction, y = interaction, fill = perc)) +
+  facet_grid(Lag~Process_error, labeller = label_both) + 
+  scale_fill_distiller(palette = "RdYlGn", direction = 1) +
+  labs(fill = "Success rate", y = "", x = "")
+
+success %>% kable() %>% kable_styling(bootstrap_options = "striped")
+```
+
+
+## Do the confidence intervals widen when there is more noise introduced into the time series?
+
+Expectation: in each case, the width of the CI should increase with process error. The width should also increase when there is strong asynchrony or synchrony.
+
+Not really...
+
+```{r, fig.height = 9}
+ggplot(df_cov) +
+  geom_boxplot(aes(fill = Process_error, y = rlpiCI_width/LPI_final, x = interaction)) + 
+  facet_wrap(~direction, nrow = 3) +
+  scale_fill_manual(values = pal_error) 
+```
+
