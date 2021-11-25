@@ -7,16 +7,15 @@ library(tidyr)
 library(data.table)
 theme_set(ggpubr::theme_pubr())
 
-
 # loading outputs ----
 
-## MY LPI ##
-
-# import results of each scenario's LPI
-lpi <- lapply(paste0("outputs/", list.files(path = "outputs/", pattern = "_lpi.RDS")), readRDS)
-names(lpi) <- gsub("_lpi.RDS", "", list.files(path = "outputs/", pattern = "_lpi.RDS"))
-# and bind into one data frame
-lpi <- dplyr::bind_rows(lpi, .id = "scenario")
+# ## MY LPI ##
+# 
+# # import results of each scenario's LPI
+# lpi <- lapply(paste0("outputs/", list.files(path = "outputs/", pattern = "_lpi.RDS")), readRDS)
+# names(lpi) <- gsub("_lpi.RDS", "", list.files(path = "outputs/", pattern = "_lpi.RDS"))
+# # and bind into one data frame
+# lpi <- dplyr::bind_rows(lpi, .id = "scenario")
 
 ## RLPI ##
 
@@ -38,7 +37,18 @@ rLpi_true$time <- rLpi_true$time - 1969
 colnames(rLpi_true)[2:4] <- paste0(colnames(rLpi_true)[2:4], "_true")
 
 # join the rlpi results together
-rLpi = left_join(rLpi, rLpi_true)
+rLpi = right_join(rLpi, rLpi_true)
+
+## PRECISION ####
+
+temp = list.files(path = "outputs/", pattern = "_precision.RDS")
+precision <- lapply(paste0("outputs/", temp), readRDS)
+names(precision) <- gsub("_precision.RDS", "", temp)
+# and bind into one data frame
+precision <- dplyr::bind_rows(precision, .id = "scenario")
+precision$time <- as.numeric(precision$time) - 1969
+# join to results dataframe
+rLpi = left_join(rLpi, precision)
 
 ## PARAMS ##
 
@@ -53,11 +63,6 @@ names(params) <- gsub("_params.RDS", "", list.files(path = "simulations/", patte
 # and bind into one data frame
 params <- dplyr::bind_rows(params, .id = "scenario")
 
-# import expected uncertainties of each scenario's growth rates
-uncertainties <- lapply(paste0("outputs/", list.files(path = "outputs/", pattern = "_uncertainty.RDS")), readRDS)
-names(uncertainties) <- gsub("_uncertainty.RDS", "", list.files(path = "outputs/", pattern = "_uncertainty.RDS"))
-uncertainty <- bind_rows(uncertainties, .id = "scenario")
-
 # make table for categories from carrying capacity scenarios
 K_scenarios <- data.frame("scenario" = params$scenario, "direction" = NA)
 K_scenarios$direction[which(K_scenarios$scenario %like% 'A|D|G|J|M|P')] <- "decline"
@@ -69,68 +74,23 @@ params$Lag[which(params$scenario %like% 'scenario4|scenario5')] <- "1"
 params$Lag[which(params$scenario %like% 'scenario6|scenario7')] <- "2"
 
 # join all tables together
-df <- dplyr::left_join(lpi, K_scenarios) %>% dplyr::left_join(params)
-df <- left_join(df, rLpi)
+df <- dplyr::left_join(rLpi, K_scenarios) %>% dplyr::left_join(params)
 
 # accuracy ----
 
-# calculate LPI accuracy as % difference [(estimated - true)/true * 100]
-#df$accuracy_boot <- ((df$LPI_boot - df$LPI_true)/df$LPI_true)*100
-#df$accuracy_boot <- df$LPI_boot - df$LPI_true
-df$accuracy_boot <- df$LPI_final - df$LPI_true
+# calculate LPI accuracy 
+df$accuracy <- df$LPI_final - df$LPI_final_true
 
 # precision ----
 
-# does the true LPI fall within the 95% confidence interval?
-if(df$LPI_true >= df$CI_low && df$LPI_true <= df$CI_high){
-  df$precision_boot <- "yes"} else {
-    df$precision_boot <- "no"
-  }
-# this next ifelse is untouched since correcting the LPI results with rlpi ---------
-if(df$LPI_true <= df$cihi_se && df$LPI_true >= df$cilo_se){
-  df$precision_se <- "yes"} else {
-    df$precision_se <- "no"
-  }
-
-# interval width 
-df$interval_width <- (df$CI_high-df$CI_low)/df$LPI_final #((df$cihi_boot-df$cilo_boot)/df$LPI_boot)
-df$interval_width_se <- (df$cihi_se-df$cilo_se)/df$LPI_se #((df$cihi_se-df$cilo_se)/df$LPI_se)
-
-# this next ifelse is untouched since correcting the LPI results with rlpi --------
-# is the bootstrap interval within the error propagated one?
-df$cilo_selargest <- df$cilo_se < df$cilo_boot
-df$cihi_selargest <- df$cihi_se > df$cihi_boot
-# put NA on the first time step, which has no uncertainty
-df$cilo_selargest[which(df$time == 1)] <- NA
-df$cihi_selargest[which(df$time == 1)] <- NA
-
-# precision vs. uncertainty ----
-
-# group uncertainties by scenario x time to match up with df
-# temp <- uncertainty %>% group_split(scenario, time) 
-# mean_uncertainty <- list()
-# sd_uncertainty <- list()
-# for(i in 1:length(temp)){
-#   mean_uncertainty[[i]] <- mean(temp[[i]]$uncertainty_LPI)
-#   sd_uncertainty[[i]] <- sd(temp[[i]]$uncertainty_LPI)
-# }
-# mean_uncertainty <- cbind(unlist(mean_uncertainty), unlist(sd_uncertainty))
-# colnames(mean_uncertainty) <- c("mean_uncertainty", "sd_uncertainty")
-# # attach to df
-# df <- cbind(df, mean_uncertainty)
-
-# calculate difference between the expected interval width and the bootstrapped one
-#df$interval_diff <- (df$interval_width-df$mean_uncertainty)/df$LPI_true
-#df$interval_diff <- (df$interval_width-df$mean_uncertainty)#/df$LPI_true
-df$interval_diff <- (df$interval_width - df$interval_width_se)
-# NOTE: what will this be now???? ---------------
+# calculated in temporary.R
 
 # format df columns for plotting
 df$Lag <- factor(df$Lag, levels = c("0", "1", "2"))
 df$direction <- factor(df$direction, levels = c("decline", "stable", "growth"))
-colnames(df)[11] <- "N0"
-colnames(df)[12] <- "lambda"
-colnames(df)[13] <- "interaction"
+colnames(df)[29] <- "N0"
+colnames(df)[30] <- "lambda"
+colnames(df)[31] <- "interaction"
 
 # save to file
 saveRDS(df, "outputs/all_results.RDS")
