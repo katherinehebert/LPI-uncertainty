@@ -162,10 +162,7 @@ ggplot(lm_boot, aes(x = as.numeric(year))) +
 
 #### HMSC #### -----------------------------------------------------------------
 
-#### Changed ex_l to just making a list called chain_dt. Adjust this part! ----
-
 # make one data frame (which includes a column of growth rates)
-
 
 # create year x species matrix  
 Y <- bind_cols(chain_dt) %>% as.matrix()
@@ -358,7 +355,6 @@ ggplot(pred_results, aes(x = year, group = model)) +
               lwd = 0, alpha = .3) +
   geom_line(aes(y = mean_dt, col = model)) +
   ylim(-1,1)
-# seems like there's a log10 issue here. check. ----
 
 # compare the slopes themselves here (with their associated errors)
 # simple slope and intercept line comparisons
