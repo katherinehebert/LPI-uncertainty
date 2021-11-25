@@ -21,6 +21,7 @@ require(patchwork)
 require(dplyr)
 require(tidyr)
 require(tidyselect)
+library(readr)
 
 # chunk params
 knitr::opts_chunk$set(echo = FALSE, 
@@ -33,8 +34,8 @@ theme_set(theme_linedraw())
 format_lpiplots <- list(
   theme(legend.position = "none"),
   labs(x = "", y = "LPI"),
-  scale_x_continuous(breaks = seq(from = 0, to = 10, by = 2)),
-  ylim(c(0,1.8)))
+  scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)),
+  ylim(c(0, 2)))
 
 # load results
 df <- readRDS("~/Documents/GitHub/LPI-sensitivity/outputs/all_results.RDS")
@@ -48,7 +49,7 @@ colours <- c("Strong Asynchrony" = "#e66101",
 # colour palette for process error plots
 pal_lags <- rev(c("#22A884FF", "#2A788EFF", "#414487FF"))
 pal_error <- c("#08306b", "#2171b5", "#6baed6")
-
+pal_compare <- c("raw" = "blue", "predicted" = "red")
 ```
 
 
@@ -68,14 +69,14 @@ df$interaction <- factor(df$interaction,
 accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "direction") {
   ggplot(df_subset,
        aes(x = get(comparison_variable),
-           y = accuracy_boot, 
+           y = accuracy, 
            group = scenario,
            col = get(colour_variable))) +
   geom_hline(yintercept = 0, lwd = 0.5) +
-  # geom_violin(aes(fill = get(colour_variable), 
-  #                 y = accuracy_boot), 
-  #             alpha = .3, lwd = 0, 
-  #             position = position_dodge(width = .5)) +
+  geom_violin(aes(fill = get(colour_variable),
+                  y = accuracy),
+              alpha = .3, lwd = 0,
+              position = position_dodge(width = .5)) +
   stat_summary(fun.data = mean_se, 
                fun.args = list(mult=1),
                geom = "pointrange", 
@@ -85,20 +86,19 @@ accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "dir
        title = "Trend bias", 
        col = colour_variable, 
        fill = colour_variable) +
-  theme(legend.position = "bottom") #+
-    #coord_cartesian(ylim = c(-10,120))
+  theme(legend.position = "bottom") 
 }
 
 precision_plot <- function(df_subset, comparison_variable, colour_variable = "direction"){
+  
   ggplot(data = df_subset, aes(x = get(comparison_variable), 
                         group = scenario,
                         col = get(colour_variable))) +
-  geom_hline(yintercept = 0, lwd = 0.5) +
-  # geom_violin(aes(fill = get(colour_variable), 
-  #                 y = interval_diff), 
-  #             alpha = .3, lwd = 0,
-  #             position = position_dodge(width = .5)) +
-  stat_summary(aes(y = interval_diff),
+  geom_violin(aes(fill = get(colour_variable),
+                  y = CI_diff),
+              alpha = .3, lwd = 0,
+              position = position_dodge(width = .5)) +
+  stat_summary(aes(y = CI_diff),
                fun.data = mean_se,
                fun.args = list(mult=1),
                geom = "pointrange",
@@ -110,6 +110,22 @@ precision_plot <- function(df_subset, comparison_variable, colour_variable = "di
          fill = colour_variable) +
  theme(legend.position = "bottom") 
 }
+
+
+precision_success_plot <- function(df_subset, comparison_variable){
+  
+  ggplot(data = df_subset, 
+         aes(x = get(comparison_variable), 
+             fill = true_within_rlpiCI)) +
+    geom_bar(stat = "count", position = "stack") +
+    labs(y = "Frequency", 
+         x = "", 
+         title = "Ability to capture the truth",
+         fill = "True LPI within CI?") +
+    theme(legend.position = "bottom") +
+    scale_fill_manual(values = c("#FB5B5A", "#003F5C"))
+}
+
 ```
 
 ***
@@ -165,23 +181,7 @@ We varied carrying capacity through time to drive populations to:
 In each scenario, carrying capacity begins at $K = 100$ and each population's initial size is exactly at this carrying capacity ($N_0 = 100$). 
 
 ```{r, fig.cap = "Carrying capacity trends used to generate the biodiversity change scenarios.", fig.align="center"}
-## CARRYING CAPACITY SCENARIOS -------------------------------------------------
-steps = 10
-K_increase = 100 + 4*c(0:9)
-K_stable = rep(100, 10)
-K_decline = 100 - 4*c(0:9)
-# plot these!
-K_plot <- data.frame(
-  time = 1:steps,
-  scenario = factor(c(rep("increase", steps), rep("stable", steps), rep("decline", steps)),
-                    levels = c("increase", "stable", "decline")),
-  K = c(K_increase, K_stable, K_decline)
-)
-ggplot(K_plot) +
-  geom_line(aes(x = time, y = K, col = scenario)) +
-  labs(x = "", y = "Carrying capacity (K)", col = "Biodiversity change\n scenario") +
-  theme(legend.position = "right") +
-  scale_x_continuous(breaks = c(1:10))
+knitr::include_graphics(here::here('figures/carryingcapacity.png'))
 ```
 
 
@@ -234,10 +234,10 @@ kbl(params, booktabs = TRUE, caption = "Simulation parameters") %>%
 df_sc1 <- dplyr::filter(df, scenario %in% paste0("scenario1", LETTERS[1:9]))
 (d <- ggplot(dplyr::filter(df_sc1, Process_error == "0"),
        aes(x = time, col = direction, group = scenario)) +
-  geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
+  geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
                    fill = direction), alpha = .3, lwd = 0) +
-  geom_line(aes(y = LPI_true), lty = 2, lwd = .2) +
-  geom_line(aes(y = LPI_boot)) +
+  geom_line(aes(y = LPI_final_true), lty = 2, lwd = .2) +
+  geom_line(aes(y = LPI_final)) +
   theme_bw() + format_lpiplots)
 ```
 
@@ -246,10 +246,10 @@ df_sc1 <- dplyr::filter(df, scenario %in% paste0("scenario1", LETTERS[1:9]))
 ```{r, fig.cap="True and calculated LPI trends for each direction of biodiversity change."}
 ggplot(dplyr::filter(df_sc1, Process_error == "0.1"),
        aes(x = time, col = direction, group = scenario)) +
-  geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
+  geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
                    fill = direction), alpha = .3, lwd = 0) +
-  geom_line(aes(y = LPI_true), lty = 2, lwd = .2) +
-  geom_line(aes(y = LPI_boot)) +
+  geom_line(aes(y = LPI_final_true), lty = 2, lwd = .2) +
+  geom_line(aes(y = LPI_final)) +
   theme_bw() + format_lpiplots
 ```
 
@@ -259,10 +259,10 @@ ggplot(dplyr::filter(df_sc1, Process_error == "0.1"),
 ```{r, fig.cap="True and calculated LPI trends for each direction of biodiversity change."}
 ggplot(dplyr::filter(df_sc1, Process_error == "0.2"),
        aes(x = time, col = direction, group = scenario)) +
-  geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
+  geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
                    fill = direction), alpha = .3, lwd = 0) +
-  geom_line(aes(y = LPI_true), lty = 2, lwd = .2) +
-  geom_line(aes(y = LPI_boot)) +
+  geom_line(aes(y = LPI_final_true), lty = 2, lwd = .2) +
+  geom_line(aes(y = LPI_final)) +
   theme_bw() + format_lpiplots
 ```
 
@@ -274,16 +274,18 @@ ggplot(dplyr::filter(df_sc1, Process_error == "0.2"),
 a <- accuracy_plot(filter(df_sc1, Process_error == "0"), "direction") + 
   theme(legend.position = "none") 
 b <- precision_plot(filter(df_sc1, Process_error == "0"), "direction") + 
-  theme(legend.position = "none") #+ coord_cartesian(ylim = c(-1, 1))
+  theme(legend.position = "none") 
 a + b
 ```
 
-```{r, include = FALSE, echo = FALSE}
-(d + labs(title = "Trends")) / (a + b)
-ggsave("~/Documents/GitHub/LPI-sensitivity/figures/fig2_direction.png", width = 6.7, height = 7.74)
+```{r}
+precision_success_plot(filter(df_sc1, Process_error == "0"), "direction") 
+```
 
-# check out the numbers
-# plotly::ggplotly(a)
+
+```{r, include = FALSE, echo = FALSE}
+(d + labs(title = "Trends")) / (a + b + c)
+ggsave("~/Documents/GitHub/LPI-sensitivity/figures/fig2_direction.png", width = 6.7, height = 7.74)
 ```
 
 
@@ -293,9 +295,14 @@ ggsave("~/Documents/GitHub/LPI-sensitivity/figures/fig2_direction.png", width = 
 a <- accuracy_plot(filter(df_sc1, Process_error == "0.1"), "direction") + 
   theme(legend.position = "none")
 b <- precision_plot(filter(df_sc1, Process_error == "0.1"), "direction") + 
-  theme(legend.position = "none") + coord_cartesian(ylim = c(-1, 1))
-a / b
+  theme(legend.position = "none") + coord_cartesian(ylim = c(0, 100))
+a + b
 ```
+
+```{r}
+precision_success_plot(filter(df_sc1, Process_error == "0.1"), "direction") 
+```
+
 
 ### Process error = 0.2
 
@@ -303,21 +310,147 @@ a / b
 a <- accuracy_plot(filter(df_sc1, Process_error == "0.2"), "direction") + 
   theme(legend.position = "none")
 b <- precision_plot(filter(df_sc1, Process_error == "0.2"), "direction") + 
-  theme(legend.position = "none") +coord_cartesian(ylim = c(-1, 1))
-a / b
+  theme(legend.position = "none") +coord_cartesian(ylim = c(0, 100))
+a + b
 ```
+
+```{r}
+precision_success_plot(filter(df_sc1, Process_error == "0.2"), "direction") 
+```
+
+
+### Summary table
 
 ```{r, out.width = 9, include=TRUE}
 # calculate mean accuracy and mean precision with standard error
 se <- function(x) sqrt(var(x)/length(x))
-df_sc1 %>% filter(Process_error == "0.2") %>%
-  group_by(direction) %>%
-  summarise(mean_accuracy = round(mean(accuracy_boot),2),
-            #se_accuracy = round(se(accuracy_boot),2),
-            mean_precision = round(mean(interval_diff),3)) %>% #,
-            #se_precision = round(se(interval_width),2)) %>%
+df_sc1 %>% 
+  group_by(direction, Process_error) %>%
+  summarise(mean_accuracy = round(mean(accuracy),2),
+            mean_precision = round(mean(CI_diff),3)) %>%
   kableExtra::kable() %>% kableExtra::kable_styling()
 ```
+## {-}
+
+```{r, out.width = 9, include=TRUE}
+temp <- paste0("scenario1", LETTERS[1:9])
+sc1 <- lapply(temp, function(x) {readRDS(here::here(paste0("outputs/",x,"_results.RDS")))})
+names(sc1) <- temp
+sc1 <- bind_rows(sc1, .id = "scenario")
+
+means <- group_by(sc1, scenario) %>%
+  summarise(mu_raw = mean(N),
+            mu_pred = mean(N_pred)
+            )
+
+ggplot(sc1)+
+  geom_density(aes(x = N, fill = "raw", col = "raw"), 
+               alpha = .3, lwd = .1) +
+  geom_density(aes(x = N_pred, fill = "predicted", col = "predicted"), 
+               alpha = .3, lwd = .1) +
+  geom_vline(data = means, aes(xintercept = mu_raw, 
+                               col = "raw"), lwd = .5) +
+  geom_vline(data = means, aes(xintercept = mu_pred, 
+                               col = "predicted"), lwd = .5) +
+  scale_fill_manual(values = pal_compare) + 
+  scale_color_manual(values = pal_compare) +
+  facet_wrap(~scenario, scales = "free") +
+  labs(col = "Source", fill = "Source")
+```
+
+```{r clean-this-up, include= FALSE, eval=FALSE}
+# import the lambdas (dt) from log-ratio of raw population sizes
+sc1_dt <- lapply(temp, function(x) {readRDS(here::here(paste0("outputs/",x,"_l_dtchain.RDS")))})
+names(sc1_dt) <- temp
+sc1_dt <- bind_rows(sc1_dt, .id = "scenario")
+sc1$dt_chain <- sc1_dt$dt_chain
+
+# import lambdas from the rlpi calculation
+lambdas <- lapply(temp, function(x) {
+  read_csv(here::here(paste0("outputs/rlpi/",x,"_pops_lambda.csv"))) %>%
+    pivot_longer(cols = 4:ncol(.), names_to = "time", values_to = "rlpi")
+  }
+  )
+names(lambdas) <- temp
+lambdas <- bind_rows(lambdas, .id = "scenario")
+sc1_dt$dt_rlpi <- lambdas$rlpi
+
+dtemp <- lapply(temp, function(x) {
+  read_csv(here::here(paste0("outputs/rlpi/",x,"_pops_dtemp.csv"))) %>%
+    pivot_longer(cols = everything(), names_to = "time", values_to = "mu_rlpi")
+  }
+  )
+names(dtemp) <- temp
+dtemp <- bind_rows(dtemp, .id = "scenario")
+
+# remove rows for first time step, since this is a baseline value
+#sc1 <- filter(sc1, time != 1)
+
+# get geometric mean dt of each distribution
+means <- group_by(sc1_dt, scenario, pop, time) %>%
+  # per "species"
+  summarise(mu_raw = EnvStats::geoMean(exp(dt_chain), na.rm = TRUE) # log-ratio of the raw population sizes
+            ) %>% ungroup() %>%
+  #"overall"
+  group_by(scenario, time) %>%
+  summarise(mu_raw = EnvStats::geoMean(mu_raw, na.rm = TRUE))
+
+means_overall <- group_by(sc1_dt, scenario, pop) %>%
+  summarise(mu_raw = EnvStats::geoMean(exp(dt_chain), na.rm = TRUE),
+            mu_pred = EnvStats::geoMean(exp(dt_rlpi), na.rm = TRUE),
+            ) %>% ungroup() %>%
+  group_by(scenario) %>%
+  summarise(
+    mu_raw = log(EnvStats::geoMean(mu_raw)),
+    mu_pred = log(EnvStats::geoMean(mu_pred))
+  )
+
+# assign these rlpi dt to the data frame
+means$mu_rlpi <- 10^dtemp$mu_rlpi
+means[which(means$time == 1), "mu_rlpi"] = 1
+
+ggplot(sc1_dt)+
+  geom_histogram(aes(x = dt_chain, fill = "raw", col = "raw"), 
+               alpha = .3, lwd = .1) +
+    geom_histogram(aes(x = dt_rlpi, fill = "predicted", col = "predicted"), 
+               alpha = .3, lwd = .1) +
+  geom_vline(data = means_overall, aes(xintercept = mu_raw, 
+                               col = "raw"), lwd = .5) +
+  geom_vline(data = means_overall, aes(xintercept = mu_pred, 
+                               col = "predicted"), lwd = .5) +
+  scale_fill_manual(values = pal_compare) + 
+  scale_color_manual(values = pal_compare) +
+  facet_wrap(~scenario) +
+  labs(col = "Source", fill = "Source", x = "Annual growth rate")
+
+# the mean across populations + species is where the disconnect happens!!!!!!
+ggplot(means, aes(x = time))+
+  geom_line(aes(y = mu_raw, col = "raw")) +
+  geom_line(aes(y = mu_rlpi, col = "predicted")) +
+  scale_fill_manual(values = pal_compare) + 
+  scale_color_manual(values = pal_compare) +
+  facet_wrap(~scenario) +
+  labs(col = "Source", fill = "Source", x = "Annual growth rate")
+
+
+ggplot(sc1)+
+  geom_vline(data = means, aes(xintercept = mu_raw, 
+                               col = "raw"), lwd = .5) +
+  geom_vline(data = means, aes(xintercept = mu_pred, 
+                               col = "predicted"), lwd = .5) +
+  scale_fill_manual(values = pal_compare) + 
+  scale_color_manual(values = pal_compare) +
+  facet_wrap(~scenario) +
+  labs(col = "Source", fill = "Source", x = "Annual growth rate")
+
+test <- pivot_longer(sc1, 
+                     names_to = "source", values_to = "DT", 
+                     cols = c("dt_rlpi", "dt_chain"))
+ggplot(test) + 
+  geom_boxplot(aes(x = source, y = DT)) + 
+  facet_wrap(~scenario)
+```
+
 
 ## {-}
 
@@ -330,7 +463,7 @@ df_sc1 %>% filter(Process_error == "0.2") %>%
 # process error comparison plot
 a <- df_sc1 %>%
   group_by(direction, Process_error) %>%
-  summarise(mean_se(accuracy_boot)) %>%
+  summarise(mean_se(accuracy)) %>%
 ggplot(aes(col = Process_error, y = y, x = direction)) +
   geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
   geom_point(size = 2.5) +
@@ -343,7 +476,7 @@ ggplot(aes(col = Process_error, y = y, x = direction)) +
   scale_color_manual(values = pal_error)
 b <- df_sc1 %>%
   group_by(direction, Process_error) %>%
-  summarise(mean_se(interval_diff)) %>%
+  summarise(mean_se(CI_diff)) %>%
 ggplot(aes(col = Process_error, y = y, x = direction)) +
   geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
   geom_point(size = 2.5) +
@@ -398,19 +531,19 @@ df_sc2 <- df[grepl("^scenario2", df$scenario), ] %>% dplyr::filter(Process_error
 df_sc3 <- df[grepl("^scenario3", df$scenario), ] %>% dplyr::filter(Process_error == "0")
 a <- ggplot(df_sc2,
        aes(x = time, group = scenario, col = direction)) +
-    geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
+    geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
                    fill = direction), alpha = .3, lwd = 0) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_wrap(~interaction) +
   theme_bw() + format_lpiplots +
   labs(title = "Predation (negative covariation)")
 b <- ggplot(df_sc3,
        aes(x = time, group = scenario, col = direction)) +
-    geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
+    geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
                    fill = direction), alpha = .3, lwd = 0) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_wrap(~interaction) +
   theme_bw() + format_lpiplots +
   labs(title = "Competition (positive covariation)")
@@ -425,19 +558,19 @@ df_sc2 <- df[grepl("^scenario2", df$scenario), ] %>% dplyr::filter(Process_error
 df_sc3 <- df[grepl("^scenario3", df$scenario), ] %>% dplyr::filter(Process_error == "0.1")
 a <- ggplot(df_sc2,
        aes(x = time, group = scenario, col = direction)) +
-    geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
+    geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
                    fill = direction), alpha = .3, lwd = 0) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_wrap(~interaction) +
   theme_bw() + format_lpiplots +
   labs(title = "Predation (negative covariation)")
 b <- ggplot(df_sc3,
        aes(x = time, group = scenario, col = direction)) +
-    geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
+    geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
                    fill = direction), alpha = .3, lwd = 0) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_wrap(~interaction) +
   theme_bw() + format_lpiplots +
   labs(title = "Competition (positive covariation)")
@@ -451,19 +584,19 @@ df_sc2 <- df[grepl("^scenario2", df$scenario), ] %>% dplyr::filter(Process_error
 df_sc3 <- df[grepl("^scenario3", df$scenario), ] %>% dplyr::filter(Process_error == "0.2")
 a <- ggplot(df_sc2,
        aes(x = time, group = scenario, col = direction)) +
-    geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
+    geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
                    fill = direction), alpha = .3, lwd = 0) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_wrap(~interaction) +
   theme_bw() + format_lpiplots +
   labs(title = "Predation (negative covariation)")
 b <- ggplot(df_sc3,
        aes(x = time, group = scenario, col = direction)) +
-    geom_ribbon(aes(ymin = cilo_boot, ymax = cihi_boot, 
+    geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
                    fill = direction), alpha = .3, lwd = 0) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_wrap(~interaction) +
   theme_bw() + format_lpiplots +
   labs(title = "Competition (positive covariation)")
@@ -508,10 +641,10 @@ a / b
 ```{r, include = TRUE}
 df_cov %>% filter(Process_error == "0") %>%
   group_by(direction, interaction) %>%
-  summarise(mean_accuracy = round(mean(accuracy_boot),3),
-            se_accuracy = round(se(accuracy_boot), 3),
-            mean_precision = round(mean(interval_diff),3),
-            se_precision = round(se(interval_diff),3)) %>% 
+  summarise(mean_accuracy = round(mean(accuracy),3),
+            se_accuracy = round(se(accuracy), 3),
+            mean_precision = round(mean(CI_diff),3),
+            se_precision = round(se(CI_diff),3)) %>% 
   kableExtra::kable()
 ```
 
@@ -525,7 +658,7 @@ df_cov %>% filter(Process_error == "0") %>%
 # process error comparison plot
 a <- df_cov %>%
   group_by(direction, interaction, Process_error) %>%
-  summarise(mean_se(accuracy_boot)) %>%
+  summarise(mean_se(accuracy)) %>%
 ggplot(aes(col = Process_error, y = y, x = direction)) +
   geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
   geom_point(size = 2.5) +
@@ -539,7 +672,7 @@ ggplot(aes(col = Process_error, y = y, x = direction)) +
   scale_color_manual(values = pal_error)
 b <- df_cov %>%
   group_by(direction, interaction, Process_error) %>%
-  summarise(mean_se(interval_diff)) %>%
+  summarise(mean_se(CI_diff)) %>%
 ggplot(aes(col = Process_error, y = y, x = direction)) +
   geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
   geom_point(size = 2.5) +
@@ -596,8 +729,8 @@ df_cov <- rbind(df_sc2, df_sc3)
 ggplot(dplyr::filter(df, 
                      interaction %in% c("Weak Synchrony", "Strong Synchrony") & Lag %in% c("1", "2") & Process_error == "0"),
        aes(x = time, group = scenario, col = direction)) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_grid(interaction~Lag, labeller = label_both) +
   theme_bw() + format_lpiplots
 ```
@@ -609,8 +742,8 @@ ggplot(dplyr::filter(df,
 ggplot(dplyr::filter(df, 
                      interaction %in% c("Weak Synchrony", "Strong Synchrony") & Lag %in% c("1", "2") & Process_error == "0.1"),
        aes(x = time, group = scenario, col = direction)) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_grid(interaction~Lag, labeller = label_both) +
   theme_bw() + format_lpiplots
 ```
@@ -622,8 +755,8 @@ ggplot(dplyr::filter(df,
 ggplot(dplyr::filter(df, 
                      interaction %in% c("Weak Synchrony", "Strong Synchrony") & Lag %in% c("1", "2") & Process_error == "0.2"),
        aes(x = time, group = scenario, col = direction)) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_grid(interaction~Lag, labeller = label_both) +
   theme_bw() + format_lpiplots
 ```
@@ -637,8 +770,8 @@ ggplot(dplyr::filter(df,
 ggplot(dplyr::filter(df, 
                      interaction %in% c("Weak Asynchrony", "Strong Asynchrony") & Lag %in% c("1", "2") & Process_error == "0"),
        aes(x = time, group = scenario, col = direction)) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_grid(interaction~Lag, labeller = label_both) +
   theme_bw() + format_lpiplots
 ```
@@ -649,8 +782,8 @@ ggplot(dplyr::filter(df,
 ggplot(dplyr::filter(df, 
                      interaction %in% c("Weak Asynchrony", "Strong Asynchrony") & Lag %in% c("1", "2") & Process_error == "0.1"),
        aes(x = time, group = scenario, col = direction)) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_grid(interaction~Lag, labeller = label_both) +
   theme_bw() + format_lpiplots
 ```
@@ -662,8 +795,8 @@ ggplot(dplyr::filter(df,
 ggplot(dplyr::filter(df, 
                      interaction %in% c("Weak Asynchrony", "Strong Asynchrony") & Lag %in% c("1", "2") & Process_error == "0.2"),
        aes(x = time, group = scenario, col = direction)) +
-  geom_line(aes(y = LPI_boot)) +
-  geom_line(aes(y = LPI_true), lty = 2) +
+  geom_line(aes(y = LPI_final)) +
+  geom_line(aes(y = LPI_final_true), lty = 2) +
   facet_grid(interaction~Lag, labeller = label_both) +
   theme_bw() + format_lpiplots
 ```
@@ -741,7 +874,7 @@ a / b
 # process error comparison plot
 df_lag %>%
   group_by(direction, interaction, Lag, Process_error) %>%
-  summarise(mean_se(accuracy_boot)) %>%
+  summarise(mean_se(accuracy)) %>%
 ggplot(aes(col = Process_error, y = y, x = Lag)) +
   geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
   geom_point(size = 2.5) +
@@ -756,7 +889,7 @@ ggplot(aes(col = Process_error, y = y, x = Lag)) +
 ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_lag_accuracy.png", width = 5.71, height = 7.42)
 df_lag %>%
   group_by(direction, interaction, Lag, Process_error) %>%
-  summarise(mean_se(interval_diff)) %>%
+  summarise(mean_se(CI_diff)) %>%
 ggplot(aes(col = Process_error, y = y, x = Lag)) +
   geom_errorbar(aes(ymin = ymin, ymax = ymax), lwd = .5, width = 0) +
   geom_point(size = 2.5) +
@@ -777,9 +910,9 @@ ggsave("~/Documents/GitHub/LPI-sensitivity/figures/figsupp_lag_precision.png", w
 ```{r, include = TRUE}
 df_lag %>%
   group_by(direction, interaction, Lag, Process_error) %>%
-  summarise(mean_accuracy = round(mean(accuracy_boot),3),
-            se_accuracy = round(se(accuracy_boot), 3),
-            mean_precision = round(mean(interval_diff),3),
-            se_precision = round(se(interval_diff),3)) %>% 
+  summarise(mean_accuracy = round(mean(accuracy),3),
+            se_accuracy = round(se(accuracy), 3),
+            mean_precision = round(mean(CI_diff),3),
+            se_precision = round(se(CI_diff),3)) %>% 
   kableExtra::kable()
 ```
