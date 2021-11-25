@@ -229,7 +229,7 @@ lpi_truechecker <- function(scenario_name){
 sim_names <- c(
   paste0("scenario1", LETTERS[1:9]),
   paste0("scenario2", LETTERS[1:18]),
-  paste0("scenario3", LETTERS[1:18])#,
+  paste0("scenario3", LETTERS[1:18]),
   paste0("scenario4", LETTERS[1:18]),
   paste0("scenario5", LETTERS[1:18]),
   paste0("scenario6", LETTERS[1:18]),
