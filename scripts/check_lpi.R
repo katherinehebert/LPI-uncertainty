@@ -59,8 +59,9 @@ lpi_checker <- function(scenario_name){
                  VERBOSE=FALSE, 
                  save_plots = 0, 
                  plot_lpi = 0,
-                 basedir = "outputs/rlpi/",
-                 scenario_name = scenario_name)
+                 basedir = "outputs/rlpi",
+                 scenario_name = scenario_name, 
+                 force_recalculation = TRUE)
   # Remove NAs (trailing years with no data)
   lpi <- lpi[complete.cases(lpi), ]
   lpi$time <- rownames(lpi) %>% as.numeric()
@@ -174,7 +175,7 @@ lpi_truechecker <- function(scenario_name){
                  BOOT_STRAP_SIZE = 1000, 
                  use_weightings=0, 
                  VERBOSE=FALSE, save_plots = 0, plot_lpi = 0,
-                 basedir = "outputs/rlpi/")
+                 basedir = "outputs/rlpi", force_recalculation = TRUE)
   # Remove NAs (trailing years with no data)
   lpi <- lpi[complete.cases(lpi), ]
   lpi$time <- rownames(lpi) %>% as.numeric()
@@ -228,7 +229,7 @@ lpi_truechecker <- function(scenario_name){
 sim_names <- c(
   paste0("scenario1", LETTERS[1:9]),
   paste0("scenario2", LETTERS[1:18]),
-  paste0("scenario3", LETTERS[1:18]),
+  paste0("scenario3", LETTERS[1:18])#,
   paste0("scenario4", LETTERS[1:18]),
   paste0("scenario5", LETTERS[1:18]),
   paste0("scenario6", LETTERS[1:18]),
