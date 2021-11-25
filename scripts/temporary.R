@@ -389,14 +389,13 @@ compare_precision <- function(simID){
   # if no, is it below the CI_low? if yes, by how much?
   # if no, is it above the CI_high? if yes, by how much?
   # determine difference between mean and the CI limits
-  df$true_diff_rlpiCI_low <- NA
-  df$true_diff_rlpiCI_high <- NA
+  df$true_diff_rlpiCI <- 0
   for(i in 1:nrow(df)){
     if(df$true_within_rlpiCI[i] == "Failure"){
       if(df$LPI_final_true[i] < df$q025_rlpi[i]){
-        df$true_diff_rlpiCI_low[i] <- df$q025_rlpi[i] - df$LPI_final_true[i]
+        df$true_diff_rlpiCI[i] <- df$LPI_final_true[i] - df$q025_rlpi[i]  
       } else if(df$LPI_final_true[i] > df$q975_rlpi[i]) {
-        df$true_diff_rlpiCI_high[i] <- df$LPI_final_true[i] - df$q975_rlpi[i] 
+        df$true_diff_rlpiCI[i] <- df$LPI_final_true[i] - df$q975_rlpi[i] 
       }
     } else next
   }
@@ -404,16 +403,10 @@ compare_precision <- function(simID){
   # calculate interval widths & difference in interval width
   df$rlpiCI_width <- df$q975_rlpi - df$q025_rlpi
   df$chainCI_width <- df$q975_chain - df$q025_chain
-  df$CI_diff <- df$chainCI_width - df$rlpiCI_width
+  df$CI_diff <- df$rlpiCI_width - df$chainCI_width 
   saveRDS(df, paste0("outputs/scenario", simID, "_precision.RDS"))
   
 }
-compare_precision("1A")
-compare_precision("1B")
-compare_precision("1C")
-compare_precision("2A")
-compare_precision("2B")
-compare_precision("4A")
 
 # get all scenario names
 sim_ids <- c(
@@ -426,3 +419,12 @@ sim_ids <- c(
   paste0("7", LETTERS[1:18])
 )
 lapply(sim_ids, compare_precision)
+
+
+
+#### CALC SUCCESS RATE - this should go in accuracy_and_precision.Rmd.
+#### Maybe plot across multiple scenarios rather than at each step?
+df %>% 
+  group_by(direction) %>% 
+  summarise(p_success = length(which(true_within_rlpiCI == "Success"))/length(true_within_rlpiCI))
+##############
