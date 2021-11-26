@@ -8,14 +8,14 @@ library(data.table)
 library(patchwork)
 theme_set(ggpubr::theme_pubr())
 
-# import expected uncertainties of each scenario's growth rates
-uncertainties <- lapply(paste0("outputs/", list.files(path = "outputs/", pattern = "_uncertainty.RDS")), readRDS)
-names(uncertainties) <- gsub("_uncertainty.RDS", "", list.files(path = "outputs/", pattern = "_uncertainty.RDS"))
-uncertainty <- bind_rows(uncertainties, .id = "scenario")
+# # import expected uncertainties of each scenario's growth rates
+# uncertainties <- lapply(paste0("outputs/", list.files(path = "outputs/", pattern = "_uncertainty.RDS")), readRDS)
+# names(uncertainties) <- gsub("_uncertainty.RDS", "", list.files(path = "outputs/", pattern = "_uncertainty.RDS"))
+# uncertainty <- bind_rows(uncertainties, .id = "scenario") %>% subset(select = "scenario")
 
 # import results
 results <- lapply(paste0("outputs/", list.files(path = "outputs/", pattern = "_results.RDS")[-1]), readRDS)
-names(results) <- gsub("_results.RDS", "", list.files(path = "results/", pattern = "_results.RDS")[-1])
+names(results) <- gsub("_results.RDS", "", list.files(path = "outputs/", pattern = "_results.RDS")[-1])
 results <- bind_rows(results, .id = "scenario")
 
 # read results file
@@ -73,42 +73,42 @@ ggplot(filter(df_err, Lag == "0")) +
   geom_boxplot(aes(y = N_se, 
                   x = interaction, 
                  fill = direction), alpha = .6, outlier.shape = NA) +
-  facet_wrap(~Process_error, dir = "v", scales = "free") +
+  facet_wrap(~Process_error, dir = "v", labeller = label_both) +
   labs(x = "", y = "GAM standard error", fill = "Scenario", col = "Scenario") +
   theme(legend.position = "bottom")
 ggsave("figures/figsupp_GAMerror.png", width = 8.5, height = 8.79)
 
-# the bootstrapped confidence intervals always underestimate the error-propagated intervals
-a <- ggplot(filter(df_err, Lag == "0")) +
-  geom_jitter(aes(y = cilo_se-cilo_boot, 
-                  x = interaction, 
-                  col = direction), 
-              size = 1, alpha = .2,
-              position = position_jitterdodge()) +
-  geom_boxplot(aes(y = cilo_se-cilo_boot, 
-                   x = interaction, 
-                   fill = direction), alpha = .6, outlier.shape = NA) +
-  facet_wrap(~Process_error, dir = "v") +
-  labs(title = "Lower confidence interval",
-       x = "", 
-       y = expression(Delta~CI[error]-CI[bootstrap]), 
-       fill = "Scenario", col = "Scenario") +
-  theme(legend.position = "bottom")
-
-b <- ggplot(filter(df_err, Lag == "0")) +
-  geom_jitter(aes(y = cihi_se-cihi_boot, 
-                  x = interaction, 
-                  col = direction), 
-              size = 1, alpha = .2,
-              position = position_jitterdodge()) +
-  geom_boxplot(aes(y = cihi_se-cihi_boot, 
-                   x = interaction, 
-                   fill = direction), alpha = .6, outlier.shape = NA) +
-  facet_wrap(~Process_error, dir = "v") +
-  labs(title = "Upper confidence interval",
-       x = "", 
-       y = expression(Delta~CI[error]-CI[bootstrap]), 
-       fill = "Scenario", col = "Scenario") +
-  theme(legend.position = "bottom")
-a + b
-ggsave("figures/figsupp_GAMvsBoot_CI.png", width = 17.3, height = 7)
+# # the bootstrapped confidence intervals always underestimate the error-propagated intervals
+# a <- ggplot(filter(df_err, Lag == "0")) +
+#   geom_jitter(aes(y = cilo_se-CI_low, 
+#                   x = interaction, 
+#                   col = direction), 
+#               size = 1, alpha = .2,
+#               position = position_jitterdodge()) +
+#   geom_boxplot(aes(y = cilo_se-CI_low, 
+#                    x = interaction, 
+#                    fill = direction), alpha = .6, outlier.shape = NA) +
+#   facet_wrap(~Process_error, dir = "v") +
+#   labs(title = "Lower confidence interval",
+#        x = "", 
+#        y = expression(Delta~CI[error]-CI[rlpi]), 
+#        fill = "Scenario", col = "Scenario") +
+#   theme(legend.position = "bottom")
+# 
+# b <- ggplot(filter(df_err, Lag == "0")) +
+#   geom_jitter(aes(y = cihi_se-CI_high, 
+#                   x = interaction, 
+#                   col = direction), 
+#               size = 1, alpha = .2,
+#               position = position_jitterdodge()) +
+#   geom_boxplot(aes(y = cihi_se-CI_high, 
+#                    x = interaction, 
+#                    fill = direction), alpha = .6, outlier.shape = NA) +
+#   facet_wrap(~Process_error, dir = "v") +
+#   labs(title = "Upper confidence interval",
+#        x = "", 
+#        y = expression(Delta~CI[error]-CI[rlpi]), 
+#        fill = "Scenario", col = "Scenario") +
+#   theme(legend.position = "bottom")
+# a + b
+# ggsave("figures/figsupp_GAMvsBoot_CI.png", width = 17.3, height = 7)
