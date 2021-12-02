@@ -3,7 +3,7 @@ title: "Accuracy and precision of the LPI"
 output:
   bookdown::html_document2:
     toc: yes
-    toc_depth: 1
+    toc_depth: 2
     toc_float:
       collapsed: no
       smooth_scroll: no
@@ -106,6 +106,29 @@ precision_plot <- function(df_subset, comparison_variable, colour_variable = "di
     labs(y = expression(Delta~from~true~uncertainty~interval), 
          x = "", 
          title = "Uncertainty bias",
+         col = colour_variable,
+         fill = colour_variable) +
+ theme(legend.position = "bottom") 
+}
+
+
+reasonable_precision_plot <- function(df_subset, comparison_variable, colour_variable = "direction") {
+    ggplot(data = df_subset, aes(x = get(comparison_variable), 
+                        group = scenario,
+                        col = get(colour_variable))) +
+  geom_violin(aes(fill = get(colour_variable),
+                  y = rlpiCI_relativewidth),
+              alpha = .3, lwd = 0,
+              position = position_dodge(width = .5)) +
+  stat_summary(aes(y = rlpiCI_relativewidth),
+               fun.data = mean_se,
+               fun.args = list(mult=1),
+               geom = "pointrange",
+               position = position_dodge(width = .5)) +
+    geom_hline(aes(yintercept = 0.1), lty = 2) +
+    labs(y = "Relative width of the CI", 
+         x = "", 
+         title = "Reasonable level of precision",
          col = colour_variable,
          fill = colour_variable) +
  theme(legend.position = "bottom") 
@@ -347,7 +370,32 @@ success %>%
   scale_fill_distiller(palette = "RdYlGn", direction = 1, limits = c(0,1)) +
   labs(fill = "Success rate", y = "", x = "")
 
-success %>% kable() %>% kable_styling(bootstrap_options = "striped")
+success %>% kable() %>% kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "200px")
+```
+
+```{r, fig.cap="Ability to capture the true LPI", fig.width=7, fig.height = 5}
+# success_diff <- df_sc1 %>% group_by(direction, Process_error) %>%
+#   mutate(meandiff = mean(true_diff_rlpiCI)) %>% 
+#   ungroup() 
+#   
+# success_diff %>% 
+#   ggplot() +
+#   geom_tile(aes(x = direction, y = Process_error, fill = meandiff)) +
+#   scale_fill_distiller(palette = "Reds", direction = 1, limits = c(0,.01)) +
+#   labs(fill = "Truth's difference \nfrom confidence interval", y = "", x = "")
+# 
+# success %>% kable() %>% kable_styling(bootstrap_options = "striped")
+ggplot(df_sc1) +
+  geom_boxplot(aes(y = true_diff_rlpiCI, x = direction, fill = Process_error)) +
+  scale_fill_brewer(palette = "Blues") +
+  labs(y = "Truth's difference \nfrom confidence interval")
+```
+
+
+```{r, fig.width=7, fig.height = 5}
+reasonable_precision_plot(df_sc1, comparison_variable = "Process_error") +
+  labs(x = "Process error")
 ```
 
 
@@ -408,7 +456,7 @@ params <- data.frame("i" = c(0,
                                    "Process error",
                                    "Lag"))
 kbl(params, booktabs = TRUE, caption = "Simulation parameters") %>%
-  kable_styling(position = "center", latex_options = "hold_position")
+  kable_styling(position = "center", latex_options = "hold_position") 
 
 # combine into one df for later
 df_sc2 <- df[grepl("^scenario2", df$scenario), ]
@@ -537,7 +585,8 @@ df_cov %>% filter(Process_error == "0") %>%
             se_accuracy = round(se(accuracy), 3),
             mean_precision = round(mean(CI_diff),3),
             se_precision = round(se(CI_diff),3)) %>% 
-  kableExtra::kable()
+  kableExtra::kable() %>%
+  scroll_box(width = "100%", height = "200px")
 ```
 
 ```{r, fig.cap="Ability to capture the true LPI", fig.height=5, fig.width=9}
@@ -554,9 +603,23 @@ success %>%
   scale_fill_distiller(palette = "RdYlGn", direction = 1, limits = c(0,1)) +
   labs(fill = "Success rate", y = "", x = "")
 
-success %>% kable() %>% kable_styling(bootstrap_options = "striped")
+success %>% kable() %>% kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "200px")
 ```
 
+
+```{r, fig.width=7, fig.height = 5}
+reasonable_precision_plot(df_cov, comparison_variable = "interaction") +
+facet_wrap(~Process_error, dir = "v")
+```
+
+```{r}
+ggplot(df_cov) +
+  geom_boxplot(aes(y = true_diff_rlpiCI, x = interaction, fill = direction)) +
+  facet_wrap(~Process_error, dir = "v") +
+  labs(y = "Truth's difference \nfrom confidence interval") +
+  geom_hline(aes(yintercept = 0), lwd = .3)
+```
 
     The LPI is sensitive to covariance when trends are declining:  
     
@@ -824,7 +887,8 @@ df_lag %>%
             se_accuracy = round(se(accuracy), 3),
             mean_precision = round(mean(CI_diff),3),
             se_precision = round(se(CI_diff),3)) %>% 
-  kableExtra::kable()
+  kableExtra::kable() %>%
+  scroll_box(width = "100%", height = "200px")
 ```
 
 
@@ -843,9 +907,14 @@ success %>%
   scale_fill_distiller(palette = "RdYlGn", direction = 1) +
   labs(fill = "Success rate", y = "", x = "")
 
-success %>% kable() %>% kable_styling(bootstrap_options = "striped")
+success %>% kable() %>% kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "200px")
 ```
 
+```{r, fig.width=7, fig.height = 10}
+reasonable_precision_plot(df_lag, comparison_variable = "interaction") +
+facet_grid(Lag~Process_error)
+```
 
 ## Do the confidence intervals widen when there is more noise introduced into the time series?
 
@@ -853,10 +922,22 @@ Expectation: in each case, the width of the CI should increase with process erro
 
 Not really...
 
-```{r, fig.height = 9}
+```{r, fig.height = 5}
+ggplot(df_sc1) +
+  geom_boxplot(aes(fill = Process_error, y = rlpiCI_width, x = direction)) + 
+  scale_fill_manual(values = pal_error) 
+```
+
+```{r, fig.height = 5}
 ggplot(df_cov) +
-  geom_boxplot(aes(fill = Process_error, y = rlpiCI_width/LPI_final, x = interaction)) + 
+  geom_boxplot(aes(fill = Process_error, y = rlpiCI_width, x = interaction)) + 
   facet_wrap(~direction, nrow = 3) +
   scale_fill_manual(values = pal_error) 
 ```
 
+```{r, fig.height = 5}
+ggplot(df_lag) +
+  geom_boxplot(aes(fill = Process_error, y = rlpiCI_width, x = interaction)) + 
+  facet_grid(Lag~direction) +
+  scale_fill_manual(values = pal_error) 
+```
