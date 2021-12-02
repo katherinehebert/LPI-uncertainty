@@ -55,7 +55,7 @@ ggplot(filter(df_err, Lag == "0" & Process_error == "0")) +
                   col = direction), size = 1, alpha = .7) +
   geom_smooth(aes(y = 10^N_pred, x = 10^N), method = "lm", col = "black", lwd = .3) +
   geom_abline(intercept = 0, slope = 1, lwd = .1) +
-  facet_grid(direction~interaction) +
+  facet_grid(direction~interaction, scales = "free_y") +
   labs(x = expression(N[sim]), 
        y = expression(N[GAM]), 
        col = "Scenario") +
