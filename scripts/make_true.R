@@ -20,6 +20,7 @@ make_true <- function(
   N0i = 100, N0j = 100, 
   lambda_i = 1.5, lambda_j = 1.5, 
   alpha_ij, alpha_ji,
+  process,
   K,
   lag_value,
   simname = filename){
@@ -48,12 +49,20 @@ make_true <- function(
   Ni <- as.matrix(rep(N0i, n_pairs))
   Nj <- as.matrix(rep(N0j, n_pairs))
   
+  # initialize matrix to store growth rates
+  dt_i <- matrix(NA, nrow = n_pairs, ncol = timesteps)
+  dt_j <- matrix(NA, nrow = n_pairs, ncol = timesteps)
+  
   # Nt+1_i = Nt_i + rNt_i * ((1 - Nt_i/K_i) + alpha_ji*Nt_j/K_j
   # calculate population sizes
   for(t in 1:timesteps){
     
+    # generate growth rates from a lognormal distribution with process error
+    r_i_error = rlnorm(n = n_pairs, meanlog = log(lambda_i), sdlog = process)
+    r_j_error = rlnorm(n = n_pairs, meanlog = log(lambda_j), sdlog = process)
+    
     # population i
-    temp_i = Ni[,t]*(1 + lambda_i*(1 - (Ni[,t] + alpha_ij*Nj[,t])/K[t]))
+    temp_i = Ni[,t]*(1 + r_i_error*(1 - (Ni[,t] + alpha_ij*Nj[,t])/K[t]))
 
     # if NAs or 0, set to 0.
     temp_i[which(is.na(temp_i))] <- 0
@@ -61,24 +70,27 @@ make_true <- function(
     Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
     
     # population j
-    temp_j = Nj[,t]*(1 + lambda_j*(1 - (Nj[,t] + alpha_ji*Ni[,t])/K[t]))
+    temp_j = Nj[,t]*(1 + r_j_error*(1 - (Nj[,t] + alpha_ji*Ni[,t])/K[t]))
 
     # if NAs or 0, set to 0.
     temp_j[which(is.na(temp_j))] <- 0
     temp_j[which(temp_j < 0)] <- 0
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
+    
+    ## save generated growth rates
+    dt_i[,t] <- r_i_error
+    dt_j[,t] <- r_j_error
   }
   
   # introduce lag to populations j
   if(lag_value != 0){
     # print("running") # to test the loop
     Nj <- Nj[,1:(lag_value + 1)]
-    dt_j <- matrix(NA, nrow = n_pairs, ncol = timesteps)
-    
+
     for(t in c(lag_value + 1):timesteps){
       
       # population j
-      temp_j = Nj[,t]*(1 + lambda_j*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t]))
+      temp_j = Nj[,t]*(1 + dt_j[,t]*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t]))
       temp_j[which(is.na(temp_j))] <- 0
       temp_j[which(temp_j < 0)] <- 0
       Nj <- cbind(Nj, temp_j)
