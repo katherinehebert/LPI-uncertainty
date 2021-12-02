@@ -54,8 +54,7 @@ sim_mech <- function(
     
     # population i
     temp_i = Ni[,t]*(1 + r_i_error*(1 - (Ni[,t] + alpha_ij*Nj[,t])/K[t]))
-    #temp_i = sapply(temp_i, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
-    
+
     # if NAs or 0, set to 0.
     temp_i[which(is.na(temp_i))] <- 0
     temp_i[which(temp_i < 0)] <- 0
@@ -63,9 +62,7 @@ sim_mech <- function(
      
     # population j
     temp_j = Nj[,t]*(1 + r_j_error*(1 - (Nj[,t] + alpha_ji*Ni[,t])/K[t]))
-    # take population size with process error from a lognormal distribution with SD observation
-    #temp_j = sapply(temp_j, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
-     
+
     # if NAs or 0, set to 0.
     temp_j[which(is.na(temp_j))] <- 0
     temp_j[which(temp_j < 0)] <- 0
@@ -80,24 +77,14 @@ sim_mech <- function(
   if(lag_value != 0){
     # print("running") # to test the loop
     Nj <- Nj[,1:(lag_value + 1)]
-    dt_j <- matrix(NA, nrow = n_pairs, ncol = timesteps)
-    
+
     for(t in c(lag_value + 1):timesteps){
       
-      # generate growth rates from a lognormal distribution with process error
-      r_j_error = rlnorm(n = n_pairs, meanlog = log(lambda_j), sdlog = process)
-      
       # population j
-      temp_j = Nj[,t]*(1 + r_j_error*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t]))
-      # take population size with process error from a lognormal distribution with SD observation
-      #temp_j = sapply(temp_j, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
+      temp_j = Nj[,t]*(1 + dt_j[t]*(1 - (Nj[,t] + alpha_ji*Ni[,(t-lag_value)])/K[t]))
       temp_j[which(is.na(temp_j))] <- 0
       temp_j[which(temp_j < 0)] <- 0
-      #print(temp_j)
       Nj <- cbind(Nj, temp_j)
-      
-      ## save generated growth rates 
-      dt_j[,t] <- r_j_error
     }
 
   }
