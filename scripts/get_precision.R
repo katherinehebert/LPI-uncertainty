@@ -169,6 +169,16 @@ compare_precision <- function(simID){
         bayestestR::overlap(x$bootstrap, x$chain) %>% unlist()
   }
         })
+  
+  
+  # calculate percentile of the true mean dt within the bootstrapped dt distribution
+  temporary <- group_split(dt_compare_w, year) 
+  df$percentile = NA
+  for(i in 2:length(temporary)){ # skip first time step bc baseline
+    percentile <- ecdf(temporary[[i]]$bootstrap)
+    df$percentile[i] <- percentile(true$LPI_final[i])
+  }
+  
   saveRDS(df, paste0("outputs/scenario", simID, "_precision.RDS"))
   
 }
