@@ -166,9 +166,9 @@ compare_precision <- function(simID){
       if(x$year[1] == "1970"){
         return(NA)
         } else { 
-        bayestestR::overlap(x$bootstrap, x$chain) %>% unlist()
+        bayestestR::overlap(x$bootstrap, x$chain)[1] 
   }
-        })
+        }) %>% unlist()
   
   
   # calculate percentile of the true mean dt within the bootstrapped dt distribution
