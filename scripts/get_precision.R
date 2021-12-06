@@ -59,8 +59,8 @@ compare_precision <- function(simID){
     pivot_longer(cols = everything(), names_to = "year", values_to = "chain")
   
   # join them together
-  dt_compare <- inner_join(bootstrap, chain, by = "year") %>%
-    pivot_longer(cols = c(bootstrap, chain), names_to = "type", values_to = "lpi")
+  dt_compare_w <- inner_join(bootstrap, chain, by = "year") 
+  dt_compare <- pivot_longer(dt_compare_w, cols = c(bootstrap, chain), names_to = "type", values_to = "lpi")
   
   # per year #### IMPORTANT ONE #######
   ggplot(dt_compare, aes(y = year, x = lpi, lty = type, fill = factor(stat(quantile)))) +
@@ -157,6 +157,18 @@ compare_precision <- function(simID){
   df$rlpiCI_relativewidth <- (df$q975_rlpi - df$q025_rlpi)/df$LPI_final
   df$chainCI_relativewidth <- (df$q975_chain - df$q025_chain)/df$mean_chain
   df$CI_diff <- (df$rlpiCI_width - df$chainCI_width)/df$LPI_final 
+  
+  
+  # calculate overlap between distribution of chain dt and rlpi dt
+  df$overlap = group_split(dt_compare_w, year) %>%
+    lapply(
+      function(x){
+      if(x$year[1] == "1970"){
+        return(NA)
+        } else { 
+        bayestestR::overlap(x$bootstrap, x$chain) %>% unlist()
+  }
+        })
   saveRDS(df, paste0("outputs/scenario", simID, "_precision.RDS"))
   
 }
