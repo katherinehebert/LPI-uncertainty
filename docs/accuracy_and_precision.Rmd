@@ -27,7 +27,8 @@ library(readr)
 knitr::opts_chunk$set(echo = FALSE, 
                       warning=FALSE, 
                       message=FALSE,
-                      fig.height = 3, fig.align = "center")
+                      fig.height = 7, 
+                      fig.align = "center")
 
 # set ggplot theme
 theme_set(theme_linedraw())
@@ -132,6 +133,51 @@ reasonable_precision_plot <- function(df_subset, comparison_variable, colour_var
          col = colour_variable,
          fill = colour_variable) +
  theme(legend.position = "bottom") 
+}
+
+overlap_precision_plot <- function(df_subset, comparison_variable, colour_variable = "direction") {
+  ggplot(data = df_subset, aes(x = get(comparison_variable), 
+                               group = scenario,
+                               col = get(colour_variable))) +
+    geom_violin(aes(fill = get(colour_variable),
+                    y = overlap),
+                alpha = .3, lwd = 0,
+                position = position_dodge(width = .5)) +
+    stat_summary(aes(y = overlap),
+                 fun.data = mean_se,
+                 fun.args = list(mult=1),
+                 geom = "pointrange",
+                 position = position_dodge(width = .5)) +
+    labs(y = "Overlap %", 
+         x = "", 
+         title = "Overlap between raw and smoothed growth rate distributions",
+         col = colour_variable,
+         fill = colour_variable) +
+    theme(legend.position = "bottom") +
+    coord_cartesian(ylim = c(0,1))
+}
+
+percentile_precision_plot <- function(df_subset, comparison_variable, colour_variable = "direction") {
+    ggplot(data = df_subset, aes(x = get(comparison_variable), 
+                        group = scenario,
+                        col = get(colour_variable))) +
+  geom_violin(aes(fill = get(colour_variable),
+                  y = percentile),
+              alpha = .3, lwd = 0,
+              position = position_dodge(width = .5)) +
+    geom_hline(aes(yintercept = 0.5), lty = 2) +
+  stat_summary(aes(y = percentile),
+               fun.data = mean_se,
+               fun.args = list(mult=1),
+               geom = "pointrange",
+               position = position_dodge(width = .5)) +
+    labs(y = "Percentile", 
+         x = "", 
+         title = "True mean percentile in the bootstrapped distribution?",
+         col = colour_variable,
+         fill = colour_variable) +
+ theme(legend.position = "bottom") +
+    coord_cartesian(ylim = c(0,1))
 }
 ```
 
@@ -375,21 +421,8 @@ success %>% kable() %>% kable_styling(bootstrap_options = "striped") %>%
 ```
 
 ```{r, fig.cap="Ability to capture the true LPI", fig.width=7, fig.height = 5}
-# success_diff <- df_sc1 %>% group_by(direction, Process_error) %>%
-#   mutate(meandiff = mean(true_diff_rlpiCI)) %>% 
-#   ungroup() 
-#   
-# success_diff %>% 
-#   ggplot() +
-#   geom_tile(aes(x = direction, y = Process_error, fill = meandiff)) +
-#   scale_fill_distiller(palette = "Reds", direction = 1, limits = c(0,.01)) +
-#   labs(fill = "Truth's difference \nfrom confidence interval", y = "", x = "")
-# 
-# success %>% kable() %>% kable_styling(bootstrap_options = "striped")
-ggplot(df_sc1) +
-  geom_boxplot(aes(y = true_diff_rlpiCI, x = direction, fill = Process_error)) +
-  scale_fill_brewer(palette = "Blues") +
-  labs(y = "Truth's difference \nfrom confidence interval")
+overlap_precision_plot(filter(df_sc1, Process_error == "0"), comparison_variable = "direction")
+percentile_precision_plot(filter(df_sc1, Process_error == "0"), comparison_variable = "direction")
 ```
 
 
@@ -612,6 +645,12 @@ success %>% kable() %>% kable_styling(bootstrap_options = "striped") %>%
 reasonable_precision_plot(df_cov, comparison_variable = "interaction") +
 facet_wrap(~Process_error, dir = "v")
 ```
+
+```{r, fig.cap="Ability to capture the true LPI", fig.width=7, fig.height = 5}
+overlap_precision_plot(filter(df_cov, Process_error == "0"), comparison_variable = "interaction")
+percentile_precision_plot(filter(df_cov, Process_error == "0"), comparison_variable = "interaction")
+```
+
 
 ```{r}
 ggplot(df_cov) +
@@ -915,6 +954,14 @@ success %>% kable() %>% kable_styling(bootstrap_options = "striped") %>%
 reasonable_precision_plot(df_lag, comparison_variable = "interaction") +
 facet_grid(Lag~Process_error)
 ```
+
+```{r, fig.cap="Ability to capture the true LPI", fig.width=7, fig.height = 5}
+overlap_precision_plot(filter(df_lag, Process_error == "0"), comparison_variable = "interaction") +
+  facet_wrap(~Lag)
+percentile_precision_plot(filter(df_lag, Process_error == "0"), comparison_variable = "interaction") +
+  facet_wrap(~Lag)
+```
+
 
 ## Do the confidence intervals widen when there is more noise introduced into the time series?
 
