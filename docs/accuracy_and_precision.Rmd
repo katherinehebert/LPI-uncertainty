@@ -165,7 +165,9 @@ percentile_precision_plot <- function(df_subset, comparison_variable, colour_var
                   y = percentile),
               alpha = .3, lwd = 0,
               position = position_dodge(width = .5)) +
+    geom_hline(aes(yintercept = 0.025), lty = 4) +
     geom_hline(aes(yintercept = 0.5), lty = 2) +
+    geom_hline(aes(yintercept = 0.975), lty = 4) +
   stat_summary(aes(y = percentile),
                fun.data = mean_se,
                fun.args = list(mult=1),
