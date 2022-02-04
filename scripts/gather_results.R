@@ -88,9 +88,9 @@ df$accuracy <- df$LPI_final - df$LPI_final_true
 # format df columns for plotting
 df$Lag <- factor(df$Lag, levels = c("0", "1", "2"))
 df$direction <- factor(df$direction, levels = c("decline", "stable", "growth"))
-colnames(df)[33] <- "N0"
-colnames(df)[34] <- "lambda"
-colnames(df)[35] <- "interaction"
+colnames(df)[35] <- "N0"
+colnames(df)[36] <- "lambda"
+colnames(df)[37] <- "interaction"
 
 # save to file
 saveRDS(df, "outputs/all_results.RDS")

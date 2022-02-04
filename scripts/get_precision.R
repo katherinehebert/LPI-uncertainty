@@ -179,6 +179,13 @@ compare_precision <- function(simID){
     df$percentile[i] <- percentile(true$LPI_final[i])
   }
   
+  
+  # get residual error of the GAM fit
+  gams2 <- readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/models/scenario", simID, "_gam.RDS"))
+  df$residual_error_sd <- lapply(gams2, resid) %>% bind_cols %>% apply(1, sd)
+  df$residual_error_mean <- lapply(gams2, resid) %>% bind_cols %>% apply(1, mean)
+  
+  # save results 
   saveRDS(df, paste0("outputs/scenario", simID, "_precision.RDS"))
   
 }
@@ -257,3 +264,34 @@ boxplot(gamse[,grep("7", colnames(gamse))], ylim = c(0, 0.1))
 abline(h = 0.05, lty = 2)
 
 dev.off()
+
+# ## get residual error from the GAMs
+# 
+# gams <- lapply(sim_ids, function(x) readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/models/scenario", x, "_gam.RDS")))
+# names(gams) = paste0("scenario", sim_ids)
+# 
+# resids <- lapply(gams, FUN = function(x){ 
+#   lapply(x, resid) %>% lapply(unlist) %>% unlist()})
+# boxplot(resids)
+# 
+# error_compare <- data.frame(
+#   "scenario" = paste0("scenario", sim_ids),
+#   "sd_resid" = lapply(resids, sd) %>% unlist()
+# )
+# 
+# toplot <- filter(error_compare, scenario %in% c(paste0("scenario", sim_ids[1:45])))
+# ggplot(toplot, aes(x=scenario, y=sd_resid)) +
+#   geom_segment(
+#     aes(x=scenario, xend=scenario, y=0, yend=sd_resid), 
+#     color=ifelse(toplot$sd_resid > 0.05, "red", "black")
+#   ) +
+#   geom_point(size = 3,
+#     color=ifelse(toplot$sd_resid > 0.05, "red", "black")
+#   ) +
+#   geom_hline(yintercept = 0.05, lty = 2) +
+#   theme(
+#     legend.position="none"
+#   ) +
+#   xlab("") +
+#   ylab("Standard deviation of the residual error") +
+#   coord_flip()
