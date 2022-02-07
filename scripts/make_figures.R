@@ -111,13 +111,13 @@ accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "dir
 (TWO_A <- accuracy_plot(df, comparison_variable = "interaction"))
 
 # 2b: Percentile of the true LPI within the CI
-percentile_plot <- function(df_subset, comparison_variable, colour_variable = "direction") {
+percentile_plot <- function(df_subset, comparison_variable, colour_variable = "direction", alpha = 0.5) {
   ggplot(data = df_subset, aes(x = get(comparison_variable), 
                                group = scenario
                                )) +
     geom_boxplot(aes(fill = get(colour_variable),
                     y = percentile),
-                alpha = .5, lwd = .5, width = .4,
+                alpha = alpha, lwd = .5, width = .4,
                 position = position_dodge(width = .5), outlier.alpha = 0) +
     geom_hline(aes(yintercept = 0.025), lty = 4) +
     geom_hline(aes(yintercept = 0.5), lty = 2) +
@@ -233,7 +233,7 @@ df <- dplyr::filter(df0, Process_error == "0")
                geom = "pointrange",
                position = position_dodge(width = .5)) +
   coord_cartesian(ylim = c(0, 0.06)) +
-    theme(legend.position = "none"))
+    theme(legend.position = "top"))
 #5b: Overlap between raw and smoothed(?) distributions
 (FOUR_D <- overlap_plot(filter(df, interaction != "No Synchrony"), 
                        comparison_variable = "direction",
@@ -241,31 +241,81 @@ df <- dplyr::filter(df0, Process_error == "0")
   facet_wrap(~interaction, ncol = 4) + 
   scale_fill_manual(values = pal_lags))
 
-
-FOUR_A / FOUR_B / FOUR_C / FOUR_D + plot_annotation(tag_levels = "a")
-ggsave("figures/fig5_lag.png", width = 10.7, height = 12)
+FOUR_A / FOUR_B + plot_annotation(tag_levels = "a")
+ggsave("figures/figSlag_accuracy.png", width = 10.7, height = 5.6)
+FOUR_C / FOUR_D + plot_annotation(tag_levels = "a")
+ggsave("figures/figSlag_precision.png", width = 10.7, height = 5.6)
 
 
 ### Supplementary figures ----
+
+accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "direction") {
+  ggplot(df_subset,
+         aes(x = get(comparison_variable),
+             y = accuracy, 
+             group = scenario#,
+             #col = get(colour_variable)
+         )) +
+    geom_hline(yintercept = 0, lwd = 0.3, lty = 2) +
+    geom_violin(aes(fill = get(colour_variable),
+                    y = accuracy),
+                alpha = .5, lwd = .2,
+                position = position_dodge(width = .5)) +
+    stat_summary(fun.data = mean_se,
+                 fun.args = list(mult=1),
+                 geom = "pointrange",
+                 position = position_dodge(width = .5)) +
+    labs(x = "", 
+         y = "Bias in the LPI", 
+         col = "Direction of change", 
+         fill = "Direction of change") +
+    theme(legend.position = "top") +
+    coord_cartesian(ylim = c(-0.05, 0.05)) 
+}
+
 
 #### Process error 
 
 df <- dplyr::filter(df0, Lag == "0")
 
 # S2a: accuracy
-(S2_A <- accuracy_plot(df, 
-                       colour_variable = "Process_error", 
-                         comparison_variable = "direction") + 
+(S2_A <- ggplot(df,
+                aes(x = direction, 
+                    y = accuracy, 
+                    fill = Process_error, 
+                    group = scenario)) +
+    geom_boxplot(outlier.shape = NA, lwd = .5) +
+    geom_hline(yintercept = 0, lwd = 0.3, lty = 2) +
     facet_wrap(~interaction, ncol = 5) + 
     scale_fill_brewer() +
-    labs(fill = "Process error", color = "Process error"))
+    labs(fill = "Process error", color = "Process error",
+         x = "", 
+     y = "Bias in the LPI") +
+  theme(legend.position = "top") +
+  coord_cartesian(ylim = c(-0.05, 0.05)))
+
+
+
 # S2b: percentile
-(S2_B <- percentile_plot(df, 
-                         colour_variable = "Process_error", 
-                           comparison_variable = "direction") + 
-    facet_wrap(~interaction, ncol = 5) + 
-    scale_fill_brewer() +
-    labs(fill = "Process error"))
+(S2_B <- ggplot(data = df, aes(x = direction, group = scenario)) +
+    geom_boxplot(aes(fill = Process_error,
+                     y = percentile),
+                 lwd = .5, outlier.shape = NA) +
+    geom_hline(aes(yintercept = 0.025), lty = 4) +
+    geom_hline(aes(yintercept = 0.5), lty = 2) +
+    geom_hline(aes(yintercept = 0.975), lty = 4) +
+    labs(y = expression(mu~Percentile), 
+         x = "", 
+         col = "Process error", 
+         fill = "Process error") +
+    theme(legend.position = "none") +
+    coord_cartesian(ylim = c(-0.1,1.1)) +
+    scale_y_continuous(breaks = c(0.025, 0.5, 0.975)) +
+  facet_wrap(~interaction, ncol = 5) + 
+  scale_fill_brewer()
+)
+
+
 
 # S2c: Does the residual error match the gam error??
 (S2_C <- ggplot(df,
@@ -273,8 +323,9 @@ df <- dplyr::filter(df0, Lag == "0")
                       y = residual_error_sd, 
                       fill = Process_error, 
                       group = scenario)) +
-    geom_violin(alpha = .5, lwd = .2, width = .5,
-                position = position_dodge(width = .5)) +
+    geom_boxplot(outlier.shape = NA, lwd = .5) +
+    # geom_violin(alpha = .5, lwd = .2, width = .5,
+    #             position = position_dodge(width = .5)) +
     geom_hline(yintercept = 0.05, lty = 2) + 
     facet_wrap(~interaction, ncol = 5) + 
     scale_fill_brewer() +
@@ -282,83 +333,94 @@ df <- dplyr::filter(df0, Lag == "0")
          y = "Standard deviation of the\nresidual error distribution",
          col = "Process error", 
          fill = "Process error") +
-    stat_summary(aes(y = residual_error_sd),
-                 fun.data = mean_se,
-                 fun.args = list(mult=1),
-                 geom = "pointrange",
-                 position = position_dodge(width = .5)) +
-    coord_cartesian(ylim = c(0, 0.06)) +
-    theme(legend.position = "none"))
-#S2d: Overlap between raw and smoothed(?) distributions
-(S2_D <- overlap_plot(df, 
-                        comparison_variable = "direction",
-                        colour_variable = "Process_error") +
-    facet_wrap(~interaction, ncol = 5) + 
-    scale_fill_brewer()) 
-
-S2_A / S2_B / S2_C / S2_D + plot_annotation(tag_levels = "a")
-ggsave("figures/figS2_processerror.png", width = 10.7, height = 12)
-
-
-#### Process error 
-
-df <- df0
-df$Lag <- paste0("Lag-", df$Lag)
-
-# S3: accuracy
-(S3 <- accuracy_plot(filter(df, interaction != "No Synchrony"), 
-                     colour_variable = "Process_error", 
-                     comparison_variable = "Lag") + 
-    facet_grid(interaction~direction) + 
-    scale_fill_brewer() +
-    labs(fill = "Process error", color = "Process error") +
-    coord_cartesian(ylim = c(-0.04, 0.04))) +
-  theme(legend.position = "top",
-        panel.grid.major.y = element_line())
-ggsave("figures/figS3_processerror_lag.png", width = 12.3, height = 10)
-
-
-# S4: percentile
-(S4 <- percentile_plot(filter(df, interaction != "No Synchrony"), 
-                       colour_variable = "Process_error", 
-                       comparison_variable = "Lag") + 
-    facet_grid(interaction~direction) + 
-    scale_fill_brewer() +
-    labs(fill = "Process error") +
+    # stat_summary(aes(y = residual_error_sd),
+    #              fun.data = mean_se,
+    #              fun.args = list(mult=1),
+    #              geom = "pointrange",
+    #              position = position_dodge(width = .5)) +
+    coord_cartesian(ylim = c(0, 0.2)) +
     theme(legend.position = "top"))
-ggsave("figures/figS4_processerror_lag.png", width = 12.3, height = 10)
+#S2d: Overlap between raw and smoothed(?) distributions
+(S2_D = ggplot(data = df, aes(x = direction, group = scenario)) +
+    geom_boxplot(aes(fill = Process_error,
+                     y = 100*overlap),
+                 lwd = .5, outlier.shape = NA) +
+    labs(y = "Overlap (%)", 
+         x = "",  
+         col = "Direction of change", 
+         fill = "Direction of change"
+    ) +
+    theme(legend.position = "none") +
+    coord_cartesian(ylim = c(0,50)) +
+    facet_wrap(~interaction, ncol = 5) + 
+    scale_fill_brewer())
+
+S2_A / S2_B + plot_annotation(tag_levels = "a")
+ggsave("figures/figSerror_accuracy.png", width = 10.7, height = 10)
+S2_C / S2_D + plot_annotation(tag_levels = "a")
+ggsave("figures/figSerror_precision.png", width = 10.7, height = 10)
 
 
-# S5: Does the residual error match the gam error??
-(S5 <- ggplot(filter(df, interaction != "No Synchrony"),
-              aes(x = Lag, 
-                  y = residual_error_sd, 
-                  fill = Process_error, 
-                  group = scenario)) +
-    geom_violin(alpha = .5, lwd = .2, width = .5,
-                position = position_dodge(width = .5)) +
-    geom_hline(yintercept = 0.05, lty = 2) + 
-    facet_grid(interaction~direction) + 
-    scale_fill_brewer() +
-    labs(x = "", 
-         y = "Standard deviation of the\nresidual error distribution",
-         col = "Process error", 
-         fill = "Process error") +
-    stat_summary(aes(y = residual_error_sd),
-                 fun.data = mean_se,
-                 fun.args = list(mult=1),
-                 geom = "pointrange",
-                 position = position_dodge(width = .5)) +
-    coord_cartesian(ylim = c(0, 0.06)) +
-    theme(legend.position = "none",
-          panel.grid.major.y = element_line()))
-ggsave("figures/figS5_processerror_lag.png", width = 12.3, height = 10)
 
-# S6: Overlap between raw and smoothed(?) distributions
-(S2_D <- overlap_plot(filter(df, interaction != "No Synchrony"),
-                      comparison_variable = "Lag",
-                      colour_variable = "Process_error") +
-    facet_grid(interaction~direction) + 
-    scale_fill_brewer() +
-    theme(panel.grid.major.y = element_line())) 
-ggsave("figures/figS6_processerror_lag.png", width = 12.3, height = 10)
+# #### Lag + Process error (too complicated)
+# 
+# df <- df0
+# df$Lag <- paste0("Lag-", df$Lag)
+# 
+# # S3: accuracy
+# (S3 <- accuracy_plot(filter(df, interaction != "No Synchrony"), 
+#                      colour_variable = "Process_error", 
+#                      comparison_variable = "Lag") + 
+#     facet_grid(interaction~direction) + 
+#     scale_fill_brewer() +
+#     labs(fill = "Process error", color = "Process error") +
+#     coord_cartesian(ylim = c(-0.04, 0.04))) +
+#   theme(legend.position = "top",
+#         panel.grid.major.y = element_line())
+# ggsave("figures/figS3_processerror_lag.png", width = 12.3, height = 10)
+# 
+# 
+# # S4: percentile
+# (S4 <- percentile_plot(filter(df, interaction != "No Synchrony"), 
+#                        colour_variable = "Process_error", 
+#                        comparison_variable = "Lag") + 
+#     facet_grid(interaction~direction) + 
+#     scale_fill_brewer() +
+#     labs(fill = "Process error") +
+#     theme(legend.position = "top"))
+# ggsave("figures/figS4_processerror_lag.png", width = 12.3, height = 10)
+# 
+# 
+# # S5: Does the residual error match the gam error??
+# (S5 <- ggplot(filter(df, interaction != "No Synchrony"),
+#               aes(x = Lag, 
+#                   y = residual_error_sd, 
+#                   fill = Process_error, 
+#                   group = scenario)) +
+#     geom_violin(alpha = .5, lwd = .2, width = .5,
+#                 position = position_dodge(width = .5)) +
+#     geom_hline(yintercept = 0.05, lty = 2) + 
+#     facet_grid(interaction~direction) + 
+#     scale_fill_brewer() +
+#     labs(x = "", 
+#          y = "Standard deviation of the\nresidual error distribution",
+#          col = "Process error", 
+#          fill = "Process error") +
+#     stat_summary(aes(y = residual_error_sd),
+#                  fun.data = mean_se,
+#                  fun.args = list(mult=1),
+#                  geom = "pointrange",
+#                  position = position_dodge(width = .5)) +
+#     coord_cartesian(ylim = c(0, 0.06)) +
+#     theme(legend.position = "none",
+#           panel.grid.major.y = element_line()))
+# ggsave("figures/figS5_processerror_lag.png", width = 12.3, height = 10)
+# 
+# # S6: Overlap between raw and smoothed(?) distributions
+# (S2_D <- overlap_plot(filter(df, interaction != "No Synchrony"),
+#                       comparison_variable = "Lag",
+#                       colour_variable = "Process_error") +
+#     facet_grid(interaction~direction) + 
+#     scale_fill_brewer() +
+#     theme(panel.grid.major.y = element_line())) 
+# ggsave("figures/figS6_processerror_lag.png", width = 12.3, height = 10)
