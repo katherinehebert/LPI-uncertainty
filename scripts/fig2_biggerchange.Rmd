@@ -1,0 +1,301 @@
+
+```{r}
+library(errors)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+
+# generate the scenarios
+source('scripts/scenario_functions.R')
+source('scripts/sim_mech.R')
+source('scripts/make_true.R')
+source('scripts/make_gam.R')
+source('scripts/get_lpi.R')
+
+# set theme for all ggplots
+theme_set(ggpubr::theme_pubr())
+
+## COMMON PARAMS ---------------------------------------------------------------
+pop_pairs = 10
+steps = 11
+obs = 0.05
+
+## CARRYING CAPACITY SCENARIOS -------------------------------------------------
+K_increase = 100 + 20*c(0:10)
+K_stable = rep(100, 11)
+K_decline = 100 - 10*c(0:10)
+# plot these!
+K_plot <- data.frame(
+  time = 1:steps,
+  scenario = factor(c(rep("increase", steps), 
+                      rep("stable", steps), 
+                      rep("decline", steps)),
+                    levels = rev(c("increase", "stable", "decline"))),
+  K = c(K_increase, K_stable, K_decline)
+)
+ggplot(K_plot) +
+  geom_line(aes(x = time, y = K, col = scenario)) +
+  labs(x = "", y = "Carrying capacity (K)", 
+       col = "Biodiversity change\n scenario") +
+  theme(legend.position = "right") +
+  scale_x_continuous(breaks = c(1:10))
+```
+
+
+```{r scenario 1, eval = F}
+sim_names <- c(paste0("scenario1", LETTERS[1:3], "_TODELETE"),
+               paste0("scenario2", LETTERS[1:6], "_TODELETE"),
+               paste0("scenario3", LETTERS[1:6], "_TODELETE"))
+K_scenarios <- rep(list(K_decline, K_stable, K_increase), 5)
+
+alphas <- rep(list(c(-0.2, 0.2), 
+                   c(-0.1, 0.1), 
+                   c(0, 0), 
+                   c(0.1, 0.1), 
+                   c(0.2, 0.2)), each = 3)
+
+for(i in 1:length(sim_names)){
+  filename <- sim_names[[i]]
+  sim_mech(
+    n_pairs = pop_pairs, timesteps = steps,
+    N0i = 100, N0j = 100,
+    lambda_i = 1.5, lambda_j = 1.5,
+    alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2],
+    process = 0,
+    observation = obs,
+    K = K_scenarios[[i]],
+    lag_value = 0
+  )
+  make_true(n_pairs = pop_pairs, timesteps = steps,
+            N0i = 100, N0j = 100,
+            lambda_i = 1.5, lambda_j = 1.5,
+            alpha_ij = alphas[[i]][1], alphas[[i]][2],
+            process = 0,
+            K = K_scenarios[[i]],
+            lag_value = 0)
+  make_gam(filename)
+  get_lpi(filename)
+}
+```
+
+
+```{r, eval = F}
+library(rlpi)
+
+# source customised LPI functions
+source('~/Documents/GitHub/LPI-sensitivity/scripts/LPIMain.R')
+source('~/Documents/GitHub/LPI-sensitivity/scripts/CalcLPI.R') # saves the GAMs
+source('~/Documents/GitHub/LPI-sensitivity/scripts/ProcessFile.R', echo=TRUE)
+
+lpi_truechecker <- function(scenario_name){
+  
+  # import simulated population
+  sim <- readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/outputs/", scenario_name, "_true.RDS"))
+  
+  # change time column to fake years, for the rlpi function to work
+  sim$time <- paste0("X", sim$time + 1969)
+  
+  # convert to wide format
+  sim <- subset(sim, select = -dt)
+  simw <- pivot_wider(sim, names_from = time, values_from = N)
+  
+  # create ID and Binomial columns
+  simw$ID <- 1:20
+  simw$Binomial <- LETTERS[1:20]
+  
+  # Constructing infiles from a populations table
+  
+  # Select populations in the dataset by setting all to TRUE
+  index_vector = rep(TRUE, nrow(simw))
+  
+  # Create infile for Canada populations
+  checker_infile_name <- create_infile(simw, 
+                                       index_vector = index_vector, 
+                                       name = paste0(scenario_name, "_true"), 
+                                       start_col_name = "X1970", 
+                                       end_col_name = "X1980"
+                                       )
+  
+  
+  # index with 1000 bootstraps (1137 pops) without weightings 
+  lpi <- LPIMain(checker_infile_name, 
+                 REF_YEAR = 1970, PLOT_MAX = 1980, 
+                 BOOT_STRAP_SIZE = 1000, 
+                 use_weightings=0, 
+                 VERBOSE=FALSE, save_plots = 0, plot_lpi = 0,
+                 basedir = "outputs/rlpi", force_recalculation = TRUE)
+  # Remove NAs (trailing years with no data)
+  lpi <- lpi[complete.cases(lpi), ]
+  lpi$time <- rownames(lpi) %>% as.numeric()
+  saveRDS(lpi, paste0("outputs/", scenario_name, "_true_rlpi.RDS"))
+}
+lapply(sim_names, lpi_truechecker)              
+```
+
+
+```{r, eval = F}
+lpi_checker <- function(scenario_name){
+  
+  # import simulated population
+  sim <- readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/simulations/", scenario_name, "_l.RDS"))
+  
+  # change time column to fake years, for the rlpi function to work
+  sim$time <- paste0("X", sim$time + 1969)
+  
+  # convert to wide format
+  simw <- pivot_wider(sim, names_from = time, values_from = N)
+  
+  # create ID and Binomial columns
+  simw$ID <- 1:20
+  simw$Binomial <- LETTERS[1:20]
+  
+  # Constructing infiles from a populations table
+  
+  # Select populations in the dataset by setting all to TRUE
+  index_vector = rep(TRUE, nrow(simw))
+  
+  # Create infile for Canada populations
+  checker_infile_name <- create_infile(simw, 
+                                       index_vector = index_vector, 
+                                       name = scenario_name, 
+                                       start_col_name = "X1970", 
+                                       end_col_name = "X1980"
+  )
+  
+  
+  # index with 1000 bootstraps (1137 pops) without weightings 
+  lpi <- LPIMain_custom(checker_infile_name, 
+                        REF_YEAR = 1970, PLOT_MAX = 1980, 
+                        BOOT_STRAP_SIZE = 1000, 
+                        use_weightings=0, 
+                        VERBOSE=FALSE, 
+                        save_plots = 0, 
+                        plot_lpi = 0,
+                        basedir = "outputs/rlpi",
+                        scenario_name = scenario_name, 
+                        force_recalculation = TRUE)
+  # Remove NAs (trailing years with no data)
+  lpi <- lpi[complete.cases(lpi), ]
+  lpi$time <- rownames(lpi) %>% as.numeric()
+  saveRDS(lpi, paste0("outputs/", scenario_name, "_rlpi.RDS"))
+}
+lapply(sim_names, lpi_checker)              
+```
+
+
+
+```{r}
+# import results from rlpi package
+temp = list.files(path = "outputs/", pattern = "_rlpi.RDS")[-grep("true", list.files(path = "outputs/", pattern = "_rlpi.RDS"))]
+temp = temp[grep("TODELETE", temp)]
+rLpi <- lapply(paste0("outputs/", temp), readRDS)
+names(rLpi) <- gsub("_TODELETE_rlpi.RDS", "", temp)
+# and bind into one data frame
+rLpi <- dplyr::bind_rows(rLpi, .id = "scenario")
+rLpi$time <- rLpi$time - 1969
+
+# import truth results from rlpi package
+temp = list.files(path = "outputs/", pattern = "_rlpi.RDS")[grep("true", list.files(path = "outputs/", pattern = "_rlpi.RDS"))]
+temp = temp[grep("TODELETE", temp)]
+rLpi_true <- lapply(paste0("outputs/", temp), readRDS)
+names(rLpi_true) <- gsub("_TODELETE_true_rlpi.RDS", "", temp)
+# and bind into one data frame
+rLpi_true <- dplyr::bind_rows(rLpi_true, .id = "scenario")
+rLpi_true$time <- rLpi_true$time - 1969
+colnames(rLpi_true)[2:4] <- paste0(colnames(rLpi_true)[2:4], "_true")
+
+# join the rlpi results together
+rLpi = right_join(rLpi, rLpi_true)
+
+# import parameter tables for each scenario
+params <- lapply(paste0("simulations/", list.files(path = "simulations/", pattern = "TODELETE_params.RDS")), readRDS)
+params <- lapply(params, data.table::transpose) %>%
+  lapply(function(x){
+    colnames(x) <- gsub(" ", "_", x[1,])
+    x <- x[-c(1,2),]
+  })
+names(params) <- gsub("_TODELETE_params.RDS", "", list.files(path = "simulations/", pattern = "TODELETE_params.RDS"))
+# and bind into one data frame
+params <- dplyr::bind_rows(params, .id = "scenario")
+
+# make table for categories from carrying capacity scenarios
+library(data.table)
+K_scenarios <- data.frame("scenario" = params$scenario, "direction" = NA)
+K_scenarios$direction[which(K_scenarios$scenario %like% 'A|D|G|J|M|P')] <- "decline"
+K_scenarios$direction[which(K_scenarios$scenario %like% 'B|E|H|K|N|Q')] <- "stable"
+K_scenarios$direction[which(K_scenarios$scenario %like% 'C|F|I|L|O|R')] <- "growth"
+
+# join all tables together
+df <- dplyr::left_join(rLpi, K_scenarios) %>% dplyr::left_join(params)
+colnames(df)[12] = "interaction"
+```
+
+```{r}
+df$interaction <- rep(c("Strong Synchrony", "Weak Synchrony", "No Synchrony", "Weak Asynchrony", "Strong Asynchrony"), each = 33)
+
+# set factor levels for plotting
+df$Process_error <- factor(df$Process_error, levels = c("0", "0.1", "0.2"))
+df$interaction <- factor(df$interaction, 
+                         levels = c("Strong Asynchrony", "Weak Asynchrony", "No Synchrony", "Weak Synchrony", "Strong Synchrony"))
+
+## PALETTES ----
+
+# colour palette for interactions
+colours <- c("Strong Asynchrony" = "#e66101", 
+             "Weak Asynchrony" = "#fdb863", 
+             "Weak Synchrony"= "#b2abd2", 
+             "Strong Synchrony" = "#5e3c99")
+
+# colour palette for process error plots
+pal_lags <- rev(c("#22A884FF", "#2A788EFF", "#414487FF"))
+pal_error <- c("#08306b", "#2171b5", "#6baed6")
+pal_compare <- c("raw" = "blue", "predicted" = "red")
+
+## THEME ----
+
+theme_set(ggpubr::theme_pubr())
+format_lpiplots <- list(
+  theme(legend.position = "none"),
+  labs(x = "", y = "LPI"),
+  scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)),
+  ylim(c(0, 4)))
+
+colnames(df)[12] = "interaction"
+# 1A-C, 2A-C, 3A-C
+df <- dplyr::filter(df, Process_error == "0" & Lag == "0")
+
+# simulated pops
+scenarios <- lapply(unique(df$scenario),
+                    function(x) readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/simulations/",x,"_TODELETE_l.RDS"))) 
+names(scenarios) <- unique(df$scenario)
+scenarios <- bind_rows(scenarios, .id = "scenario")
+scenarios <- left_join(scenarios, 
+                       distinct(subset(df, select = c(scenario, direction, interaction))), by = "scenario")
+# simulations
+ONE_A <- ggplot(scenarios, 
+       aes(x = time, col = direction, group = interaction(popID, scenario))) +
+  geom_line(aes(y = N), lwd = .2) +
+  labs(x = "", y = "Abundance (N)") + 
+  scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)) +
+  facet_wrap(~interaction, nrow = 5) +
+  theme(legend.position = "none",
+        strip.text = element_text(face = "bold"))
+
+# lpi
+ONE_B <- ggplot(df, 
+       aes(x = time, col = direction, group = scenario)) +
+    geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
+                    fill = direction), alpha = .3, lwd = 0) +
+    geom_line(aes(y = LPI_final_true), lty = 2, lwd = .2) +
+    geom_line(aes(y = LPI_final)) +
+    format_lpiplots +
+  labs(col = "Direction of change", fill = "Direction of change") +
+  facet_wrap(~interaction, nrow = 5) +
+  theme(legend.position = "none",
+        strip.text = element_text(face = "bold"))
+
+# put together and save
+ONE_A + ONE_B + plot_annotation(tag_levels = 'a')
+ggsave("figures/fig2_alternative_largerchangeinK.png", width = 5, height = 8)
+```
