@@ -51,7 +51,6 @@ data_raw/LPR2020data_public.csv
 .DS_Store
 
 # outputs that aren't needed on github
-figures/
 outputs/
 simulations/
 figures/scenario*
@@ -62,6 +61,8 @@ outputs/all_results.csv
 outputs/all_results.RDS
 outputs/scenario*
 simulations/
+scenario**
+Figures/oldies/
 
 # draft scripts
 scripts/test_marima.R
