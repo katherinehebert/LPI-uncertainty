@@ -44,7 +44,7 @@ format_lpiplots <- list(
   theme(legend.position = "none"),
   labs(x = "", y = "LPI"),
   scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)),
-  ylim(c(0, 3)))
+  ylim(c(0.5, 2)))
 
 ## FIG 1: Overview of the scenario trends
 
