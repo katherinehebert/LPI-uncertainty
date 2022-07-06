@@ -5,7 +5,7 @@ library(dplyr)
 library(tidyr)
 library(patchwork)
 library(ggpubr)
-
+library(ggsci)
 
 ## DATA ----
 
@@ -64,6 +64,7 @@ ONE_A <- ggplot(scenarios,
   geom_line(aes(y = N), lwd = .2) +
   labs(x = "", y = "Abundance (N)") + 
   scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)) +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
   facet_wrap(~interaction, nrow = 5) +
   theme(legend.position = "none",
         strip.text = element_text(face = "bold"))
@@ -76,6 +77,8 @@ ONE_B <- ggplot(df,
     geom_line(aes(y = LPI_final_true), lty = 2, lwd = .2) +
     geom_line(aes(y = LPI_final)) +
     format_lpiplots +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
   labs(col = "Direction of change", fill = "Direction of change") +
   facet_wrap(~interaction, nrow = 5) +
   theme(legend.position = "none",
