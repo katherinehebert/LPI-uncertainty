@@ -4,11 +4,15 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(patchwork)
+library(ggpubr)
+
 
 ## DATA ----
 
 # load results
-df0 <- readRDS("~/Documents/GitHub/LPI-sensitivity/outputs/all_results.RDS")
+df1 <- readRDS("~/Documents/GitHub/LPI-sensitivity/outputs/all_results.RDS")
+df2 <- readRDS("outputs/all_uncertaintypropagation.RDS")
+df0 <- left_join(df1, df2, by = c("scenario", "time"))
 
 # set factor levels for plotting
 df0$Process_error <- factor(df0$Process_error, levels = c("0", "0.1", "0.2"))
@@ -40,7 +44,7 @@ format_lpiplots <- list(
   theme(legend.position = "none"),
   labs(x = "", y = "LPI"),
   scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)),
-  ylim(c(0.6, 1.6)))
+  ylim(c(0, 3)))
 
 ## FIG 1: Overview of the scenario trends
 
@@ -82,7 +86,52 @@ ONE_A + ONE_B + plot_annotation(tag_levels = 'a')
 ggsave("figures/fig2_trendoverview.png", height = 10.7, width = 5.6)
 
 
-## FIG 2: Accuracy of the trends
+## FIG 3: Accuracy of the trends
+
+df <- dplyr::filter(df0, Lag == 0, Process_error == 0)
+
+(FIG3_A <- ggline(df, 
+                  "interaction", 
+                  "accuracy",
+                  color = "direction", 
+                  point.size = 2, size = .3,
+                  add = c("mean_se")) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    labs(color = "Direction of change",
+         x = " ", 
+         y = "Bias from the expected LPI") +
+    scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 14),
+          panel.grid.major.y = element_line(),
+          legend.position = "none") +
+    coord_cartesian(ylim = c(-0.05, 0.05)) +
+    geom_hline(yintercept = 0, lwd = .2, lty = 2))
+(FIG3_B <- ggline(df, 
+                  "interaction", 
+                  "percentile",
+                  color = "direction", 
+                  point.size = 2, size = .3,
+                  add = c("mean_se")) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    geom_hline(aes(yintercept = 0.025), lty = 4, alpha = .4) +
+    geom_hline(aes(yintercept = 0.5), lty = 2, alpha = .4) +
+    geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
+    labs(y = "Percentile of the expected LPI", #expression(mu~Percentile), 
+         x = "", 
+         col = "Direction\n of change", 
+         fill = "Direction of change") +
+    scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 14),
+          legend.position = "right") +
+    coord_cartesian(ylim = c(-0.1,1.1)) +
+    scale_y_continuous(breaks = c(0.025, 0.5, 0.975)))
+(FIG3_A + FIG3_B + plot_annotation(tag_levels = "a")) 
+ggsave("figures/fig3_accuracy.png", width = 12.4, height = 5.14)
+
 
 # 2a: accuracy
 accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "direction") {
@@ -92,9 +141,13 @@ accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "dir
              group = scenario#,
              #col = get(colour_variable)
              )) +
+    # geom_jitter(aes(col = get(colour_variable)),
+    #             position = position_jitterdodge(seed = 12, 
+    #                                             jitter.width = .2)) +
+    # geom_boxplot(aes(fill = get(colour_variable)),
+    #                  alpha = .5, width = .5, position = position_dodge(width = .7)) +
     geom_hline(yintercept = 0, lwd = 0.3, lty = 2) +
-    geom_violin(aes(fill = get(colour_variable),
-                    y = accuracy),
+    geom_violin(aes(fill = get(colour_variable)),
                 alpha = .5, lwd = .2,
                 position = position_dodge(width = .5)) +
     stat_summary(fun.data = mean_se,
@@ -108,17 +161,18 @@ accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "dir
     theme(legend.position = "top") +
     coord_cartesian(ylim = c(-0.05, 0.05)) 
 }
-(TWO_A <- accuracy_plot(df, comparison_variable = "interaction"))
+#(TWO_A <- accuracy_plot(df, comparison_variable = "interaction"))
 
 # 2b: Percentile of the true LPI within the CI
 percentile_plot <- function(df_subset, comparison_variable, colour_variable = "direction", alpha = 0.5) {
   ggplot(data = df_subset, aes(x = get(comparison_variable), 
-                               group = scenario
+                               group = scenario,
+                               y = percentile
                                )) +
     geom_boxplot(aes(fill = get(colour_variable),
                     y = percentile),
-                alpha = alpha, lwd = .5, width = .4,
-                position = position_dodge(width = .5), outlier.alpha = 0) +
+                alpha = alpha, lwd = .5, width = .5,
+                position = position_dodge(width = .7), outlier.alpha = 0) +
     geom_hline(aes(yintercept = 0.025), lty = 4) +
     geom_hline(aes(yintercept = 0.5), lty = 2) +
     geom_hline(aes(yintercept = 0.975), lty = 4) +
@@ -129,61 +183,117 @@ percentile_plot <- function(df_subset, comparison_variable, colour_variable = "d
     theme(legend.position = "none") +
     coord_cartesian(ylim = c(-0.1,1.1)) +
     scale_y_continuous(breaks = c(0.025, 0.5, 0.975))
-}
-(TWO_B <- percentile_plot(df, comparison_variable = "interaction"))
+}  
+#(TWO_B <- percentile_plot(df, comparison_variable = "interaction"))
 
 # put together and save
-TWO_A / TWO_B + plot_annotation(tag_levels = 'a')
-ggsave("figures/fig3_accuracy.png", width = 10.7, height = 5.6)
+#TWO_A / TWO_B + plot_annotation(tag_levels = 'a')
 
 
 
 ## FIG 3: Precision of the trends
 
-#3a: Does the residual error match the gam error??
-THREE_A <- ggplot(df, aes(x = interaction, y = residual_error_sd, fill = direction, group = scenario)) +
-  geom_violin(alpha = .5, lwd = .2, width = .5,
-              position = position_dodge(width = .5)) +
-  geom_hline(yintercept = 0.05, lty = 2) +
-  labs(x = "", 
-       y = "Standard deviation of the\nresidual error distribution",
-       col = "Direction of change", 
-       fill = "Direction of change") +
-  stat_summary(aes(y = residual_error_sd),
-               fun.data = mean_se,
-               fun.args = list(mult=1),
-               geom = "pointrange",
-               position = position_dodge(width = .5)) +
-  coord_cartesian(ylim = c(0, 0.06))
+# #3a: Does the residual error match the gam error??
+# THREE_A <- ggplot(df, aes(x = interaction, y = residual_error_sd, fill = direction, group = scenario)) +
+#   geom_violin(alpha = .5, lwd = .2, width = .5,
+#               position = position_dodge(width = .5)) +
+#   geom_hline(yintercept = 0.05, lty = 2) +
+#   labs(x = "", 
+#        y = "Standard deviation of the\nresidual error distribution",
+#        col = "Direction of change", 
+#        fill = "Direction of change") +
+#   stat_summary(aes(y = residual_error_sd),
+#                fun.data = mean_se,
+#                fun.args = list(mult=1),
+#                geom = "pointrange",
+#                position = position_dodge(width = .5)) +
+#   coord_cartesian(ylim = c(0, 0.06))
+# 
+# #3b: Overlap between raw and smoothed(?) distributions
+# 
+# overlap_plot <- function(df_subset, comparison_variable, colour_variable = "direction") {
+#   ggplot(data = df_subset, aes(x = get(comparison_variable), 
+#                                group = scenario#,
+#                                #col = get(colour_variable)
+#                                )) +
+#     geom_violin(aes(fill = get(colour_variable),
+#                     y = 100*overlap),
+#                 alpha = .5, lwd = .2, width = .65,
+#                 position = position_dodge(width = .5)) +
+#     stat_summary(aes(y = 100*overlap),
+#                  fun.data = mean_se,
+#                  fun.args = list(mult=1),
+#                  geom = "pointrange",
+#                  position = position_dodge(width = .5)) +
+#     labs(y = "Overlap (%)", 
+#          x = "",  
+#          col = "Direction of change", 
+#          fill = "Direction of change"
+#          ) +
+#     theme(legend.position = "none") +
+#     coord_cartesian(ylim = c(0,50))
+# }
+# THREE_B <- overlap_plot(df, comparison_variable = "interaction")
+# 
+# THREE_A / THREE_B + plot_annotation(tag_levels = "a")
+# ggsave("figures/fig4_precision.png", width = 10.7, height = 5.6)
 
-#3b: Overlap between raw and smoothed(?) distributions
 
-overlap_plot <- function(df_subset, comparison_variable, colour_variable = "direction") {
-  ggplot(data = df_subset, aes(x = get(comparison_variable), 
-                               group = scenario#,
-                               #col = get(colour_variable)
-                               )) +
-    geom_violin(aes(fill = get(colour_variable),
-                    y = 100*overlap),
-                alpha = .5, lwd = .2, width = .65,
-                position = position_dodge(width = .5)) +
-    stat_summary(aes(y = 100*overlap),
-                 fun.data = mean_se,
-                 fun.args = list(mult=1),
-                 geom = "pointrange",
-                 position = position_dodge(width = .5)) +
-    labs(y = "Overlap (%)", 
-         x = "",  
-         col = "Direction of change", 
-         fill = "Direction of change"
-         ) +
-    theme(legend.position = "none") +
-    coord_cartesian(ylim = c(0,50))
-}
-THREE_B <- overlap_plot(df, comparison_variable = "interaction")
+## FIG 4: Uncertainty (propagated)
 
-THREE_A / THREE_B + plot_annotation(tag_levels = "a")
-ggsave("figures/fig4_precision.png", width = 10.7, height = 5.6)
+df <- dplyr::filter(df0, Lag == 0)
+
+facet_names <- c(
+  `0` = "Process ε = 0",
+  `0.1` = "Process ε = 0.1",
+  `0.2` = "Process ε = 0.2"
+)
+
+(FIG4_A <- ggline(df, 
+               "interaction", 
+               "lpi_bias",
+               color = "direction", 
+               point.size = 2, size = .3,
+               facet.by = "Process_error",
+               add = c("mean_se")) +
+  facet_wrap(~Process_error, dir = "h", labeller = as_labeller(facet_names)) + #+
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  labs(color = "Direction of change",
+       x = " ", 
+       y = "Uncertainty bias of the LPI") +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10),
+                   breaks = function(x){x[c(TRUE, FALSE)]}) +
+  theme(axis.text.x = element_text(size = 11),
+        axis.title = element_text(size = 14),
+        strip.text = element_text(size = 14),
+        panel.grid.major.y = element_line(),
+        legend.position = "top",
+        panel.spacing.x = unit(4, "mm")) +
+  coord_cartesian(ylim = c(-0.25, 0.1)) +
+  geom_hline(yintercept = 0, lwd = .2, lty = 2))
+(FIG4_B <- ggline(df, 
+                "interaction", 
+                "lpi_variance",
+                color = "direction", 
+                point.size = 2, size = .3,
+                facet.by = "Process_error",
+                add = c("mean_se")) +
+    facet_wrap(~Process_error, dir = "h", labeller = as_labeller(facet_names)) + #+
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    labs(color = "Direction of change",
+         x = " ", 
+         y = "Variance of the LPI") +
+    scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10),
+                     breaks = function(x){x[c(TRUE, FALSE)]}) +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 14),
+          panel.grid.major.y = element_line(),
+          legend.position = "none",
+          panel.spacing.x = unit(4, "mm")) +
+    coord_cartesian(ylim = c(0, 0.1)))
+(FIG4_A / FIG4_B + plot_annotation(tag_levels = "a")) 
+ggsave("figures/fig4_biasvariance_propagateduncertainty.png", width = 10.9, height = 7.7)
 
 
 ## SUPPLEMENTARY
@@ -276,23 +386,107 @@ accuracy_plot <- function(df_subset, comparison_variable, colour_variable = "dir
 
 #### Process error 
 
-df <- dplyr::filter(df0, Lag == "0")
+# df <- dplyr::filter(df0, Lag == "0")
+# 
+# library(ggpubr)
+# capitalize <- function(string) {
+#   substr(string, 1, 1) <- toupper(substr(string, 1, 1))
+#   string
+# }
+# XX_A <- ggline(df, 
+#        "interaction", 
+#        "lpi_bias",
+#        color = "Process_error", 
+#        point.size = 2, 
+#        facet.by = "direction",
+#        add = c("mean_se")) +
+#   facet_wrap(~direction, dir = "v", labeller = labeller(direction = capitalize)) + #+
+#   scale_color_viridis_d(begin = .3, end = .7, option = "A") +
+# labs(color = "Process uncertainty",
+#      x = " ", 
+#      y = "Uncertainty correction") +
+#   scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+#   theme(axis.text.x = element_text(size = 11, angle = 45, vjust = .9, hjust = .9),
+#         axis.title = element_text(size = 14, face = "bold"),
+#         strip.text = element_text(size = 14),
+#         panel.grid.major.y = element_line(),
+#         legend.position = "none")
+# XX_B <- ggline(df, 
+#        "interaction", 
+#        "lpi_variance",
+#        color = "Process_error", 
+#        point.size = 2, 
+#        facet.by = "direction",
+#        add = c("mean_se")) +
+#   facet_wrap(~direction, dir = "v", labeller = labeller(direction = capitalize)) + #+
+#   scale_color_viridis_d(begin = .3, end = .7, option = "A") +
+#   labs(color = "Process\nuncertainty",
+#        x = " ", 
+#        y = "Variance") +
+#   scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+#   theme(axis.text.x = element_text(size = 11, angle = 45, vjust = .9, hjust = .9),
+#         axis.title = element_text(size = 14, face = "bold"),
+#         strip.text = element_text(size = 14),
+#         panel.grid.major.y = element_line(),
+#         legend.position = "right",
+#         legend.title = element_text(face = "bold"))
+# 
+# (XX_A + XX_B + plot_annotation(tag_levels = "a")) 
+# ggsave("figures/figX_biasvariance_propagateduncertainty.png")
+
+
+ggline(df0, 
+               "interaction", 
+               "lpi_bias",
+               color = "Lag", 
+               point.size = 2, 
+               facet.by = c("direction", "Process_error"),
+               add = c("mean_se")) +
+  facet_wrap(~direction+Process_error, dir = "v", labeller = labeller(direction = capitalize)) + #+
+  scale_color_viridis_d(begin = .3, end = .7, option = "A") +
+  labs(color = "Process uncertainty",
+       x = " ", 
+       y = "Uncertainty correction") +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+  theme(axis.text.x = element_text(size = 11, angle = 45, vjust = .9, hjust = .9),
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 14),
+        panel.grid.major.y = element_line(),
+        legend.position = "none")
+ggline(df0, 
+       "interaction", 
+       "lpi_variance",
+       color = "Process_error", 
+       point.size = 2, 
+       facet.by = c("direction", "Lag"),
+       add = c("mean_se")) +
+  facet_wrap(~direction+Lag, dir = "v", labeller = labeller(direction = capitalize)) + #+
+  scale_color_viridis_d(begin = .3, end = .7, option = "A") +
+  labs(color = "Process uncertainty",
+       x = " ", 
+       y = "Variance") +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+  theme(axis.text.x = element_text(size = 11, angle = 45, vjust = .9, hjust = .9),
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 14),
+        panel.grid.major.y = element_line(),
+        legend.position = "none")
 
 # S2a: accuracy
 (S2_A <- ggplot(df,
-                aes(x = direction, 
-                    y = accuracy, 
-                    fill = Process_error, 
+                aes(x = Process_error, 
+                    y = accuracy,
+                    fill = direction, 
                     group = scenario)) +
     geom_boxplot(outlier.shape = NA, lwd = .5) +
     geom_hline(yintercept = 0, lwd = 0.3, lty = 2) +
     facet_wrap(~interaction, ncol = 5) + 
-    scale_fill_brewer() +
-    labs(fill = "Process error", color = "Process error",
-         x = "", 
+    #scale_fill_brewer(palette = "Oranges") +
+    labs(fill = "Direction of change", color = "Direction of change",
+         x = "Process uncertainty", 
      y = "Bias in the LPI") +
-  theme(legend.position = "top") +
-  coord_cartesian(ylim = c(-0.05, 0.05)))
+  theme(legend.position = "top", panel.grid.major = element_line())) #+
+  #coord_cartesian(ylim = c(-0.05, 0.05)))
 
 
 
@@ -314,7 +508,6 @@ df <- dplyr::filter(df0, Lag == "0")
   facet_wrap(~interaction, ncol = 5) + 
   scale_fill_brewer()
 )
-
 
 
 # S2c: Does the residual error match the gam error??
