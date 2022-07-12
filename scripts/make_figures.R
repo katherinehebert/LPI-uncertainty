@@ -308,7 +308,101 @@ ggsave("figures/fig4_biasvariance_propagateduncertainty.png", width = 10.9, heig
 # LAG #######
 
 # load results
-df <- dplyr::filter(df0, Process_error == "0")
+df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
+
+(FIG5_A <- ggline(df, 
+                  "Lag", 
+                  "accuracy",
+                  color = "direction",
+                  facet.by = "interaction",
+                  point.size = 2, size = .3,
+                  add = c("mean_se")) +
+    facet_wrap(~interaction, nrow =  1) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    # scale_color_viridis_d(begin = .2, end = .7, option = "magma")+
+    # scale_fill_viridis_d(begin = .2, end = .7, option = "magma")+
+    labs(color = "Direction of change",
+         x = "Covariance lag", 
+         y = "Bias from the\nexpected LPI") +
+    scale_x_discrete(labels = function(x) paste0("Lag-", x)) +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 14),
+          panel.grid.major.y = element_line())+#,
+          #legend.position = "none") +
+    coord_cartesian(ylim = c(-0.05, 0.05)) +
+    geom_hline(yintercept = 0, lwd = .2, lty = 2))
+(FIG5_B <- ggline(df, 
+                  "Lag", 
+                  "percentile",
+                  color = "direction", 
+                  facet.by = "interaction",
+                  point.size = 2, size = .3,
+                  add = c("mean_se")) +
+    facet_wrap(~interaction, nrow =  1) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    geom_hline(aes(yintercept = 0.025), lty = 4, alpha = .4) +
+    geom_hline(aes(yintercept = 0.5), lty = 2, alpha = .4) +
+    geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
+    labs(y = "Percentile of the\nexpected LPI", #expression(mu~Percentile), 
+         x = "Covariance lag", 
+         col = "Direction\n of change", 
+         fill = "Direction of change") +
+    scale_x_discrete(labels = function(x) paste0("Lag-", x)) +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 14),
+          legend.position = "none") +
+    coord_cartesian(ylim = c(-0.1,1.1)) +
+    scale_y_continuous(breaks = c(0.025, 0.5, 0.975)))
+(FIG5_A / FIG5_B + plot_annotation(tag_levels = "a")) 
+ggsave("figures/fig5_lag_accuracy.png", width = 8.56, height = 6.77)
+
+(FIG5_C <- ggline(df, 
+                  "Lag", 
+                  "lpi_bias",
+                  color = "direction",
+                  facet.by = "interaction",
+                  point.size = 2, size = .3,
+                  add = c("mean_se")) +
+    facet_wrap(~interaction, nrow =  1) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    # scale_color_viridis_d(begin = .2, end = .7, option = "magma")+
+    # scale_fill_viridis_d(begin = .2, end = .7, option = "magma")+
+    labs(color = "Direction of change",
+         x = "Covariance lag", 
+         y = "Uncertainty bias of the LPI") +
+    scale_x_discrete(labels = function(x) paste0("Lag-", x)) +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 14),
+          panel.grid.major.y = element_line())+#,
+    #legend.position = "none") +
+    coord_cartesian(ylim = c(-0.25, 0.1)) +
+    geom_hline(yintercept = 0, lwd = .2, lty = 2))
+(FIG5_D <- ggline(df, 
+                  "Lag", 
+                  "lpi_variance",
+                  color = "direction", 
+                  facet.by = "interaction",
+                  point.size = 2, size = .3,
+                  add = c("mean_se")) +
+    facet_wrap(~interaction, nrow =  1) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    labs(y = "Variance of the LPI", #expression(mu~Percentile), 
+         x = "Covariance lag", 
+         col = "Direction\n of change", 
+         fill = "Direction of change") +
+    scale_x_discrete(labels = function(x) paste0("Lag-", x)) +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 14),
+          legend.position = "none") +
+    coord_cartesian(ylim = c(0,0.1))) 
+(FIG5_C / FIG5_D + plot_annotation(tag_levels = "a")) 
+ggsave("figures/fig5_lag_uncertainty.png", width = 8.56, height = 6.77)
+
 
 # 4a: accuracy
 (FOUR_A <- accuracy_plot(filter(df, interaction != "No Synchrony"), 
