@@ -38,15 +38,24 @@ df_err <- inner_join(results, df)
 
 ## comparing GAM predictions to simulated population sizes
 
+facet_names <- c(
+  `0` = "Process ε = 0",
+  `0.1` = "Process ε = 0.1",
+  `0.2` = "Process ε = 0.2"
+)
+
 # plot difference between prediction and simulation
 ggplot(filter(df_err, Lag == "0")) +
   geom_jitter(aes(y = (10^N_pred)-(10^N), 
                   x = interaction, 
                   col = direction), size = 1, alpha = .7) +
-  facet_wrap(~Process_error, dir = "v") +
-  labs(x = "", y = expression(N[sim]~Delta~N[GAM]), col = "Scenario") +
-  theme(legend.position = "bottom")
-ggsave("figures/figsupp_GAMpredictions.png", width = 11.8, height = 9)
+  facet_wrap(~ Process_error, dir = "v", labeller = as_labeller(facet_names)) +
+  labs(x = "", y = expression(N[sim]~Delta~N[GAM]), col = "Trend") +
+  theme(legend.position = "top") +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+  ggpubr::theme_pubr()
+ggsave("figures/figsupp_GAMpredictions.png", width = 6, height = 6)
 
 # plot N from GAM prediction vs. simulated N
 ggplot(filter(df_err, Lag == "0" & Process_error == "0")) +
