@@ -48,13 +48,14 @@ facet_names <- c(
 ggplot(filter(df_err, Lag == "0")) +
   geom_jitter(aes(y = (10^N_pred)-(10^N), 
                   x = interaction, 
-                  col = direction), size = 1, alpha = .7) +
+                  col = direction), size = 1, alpha = .5, position = position_jitterdodge()) +
   facet_wrap(~ Process_error, dir = "v", labeller = as_labeller(facet_names)) +
   labs(x = "", y = expression(N[sim]~Delta~N[GAM]), col = "Trend") +
   theme(legend.position = "top") +
   scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
   scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
-  ggpubr::theme_pubr()
+  ggpubr::theme_pubr() +
+  geom_hline(yintercept = 0, lwd = .3, lty = 2)
 ggsave("figures/figsupp_GAMpredictions.png", width = 6, height = 6)
 
 # plot N from GAM prediction vs. simulated N
