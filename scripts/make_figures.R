@@ -102,7 +102,7 @@ ONE_C <- ggplot(df,
 
 # put together and save
 ONE_A + ONE_B + plot_annotation(tag_levels = 'a')
-ggsave("figures/fig2_trendoverview.png", height = 10.7, width = 5.6)
+ggsave("figures/fig1_trendoverview.png", height = 10.7, width = 5.6)
 
 #### remove time = 1 ----
 # bc it is just the baseline
