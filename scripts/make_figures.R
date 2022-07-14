@@ -164,7 +164,11 @@ df <- dplyr::filter(df0, Lag == 0)
 facet_names <- c(
   `0` = "Process ε = 0",
   `0.1` = "Process ε = 0.1",
-  `0.2` = "Process ε = 0.2"
+  `0.2` = "Process ε = 0.2",
+  `Strong Asynchrony` = "Strong Asynchrony", 
+  `Weak Asynchrony` = "Weak Asynchrony", 
+  `Weak Synchrony`= "Weak Synchrony", 
+  `Strong Synchrony` = "Strong Synchrony"
 )
 
 (FIG3_A <- ggline(df, 
@@ -311,17 +315,6 @@ ggsave("figures/fig5_lag_uncertainty.png", width = 8.56, height = 6.77)
 
 # FIG S: LAG + ERROR ----
 
-facet_names <- c(
-  `0` = "Process ε = 0",
-  `0.1` = "Process ε = 0.1",
-  `0.2` = "Process ε = 0.2",
-  `Strong Asynchrony` = "Strong Asynchrony", 
-  `Weak Asynchrony` = "Weak Asynchrony", 
-  `Weak Synchrony`= "Weak Synchrony", 
-  `Strong Synchrony` = "Strong Synchrony"
-  )
-
-# load results
 df <- dplyr::filter(df0, interaction != "No Synchrony")
 
 (FIGSX_A <- ggline(df, 
@@ -392,7 +385,6 @@ ggsave("figures/figSX_lag_percentile.png", width = 8.56, height = 8)
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
 
-
 (FIGSX_D <- ggline(df, 
                   "Lag", 
                   "lpi_variance",
@@ -414,3 +406,114 @@ ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
           legend.position = "none") +
     coord_cartesian(ylim = c(0,0.1))) 
 ggsave("figures/figSX_lag_variance.png", width = 8.56, height = 8)
+
+# FIG S: GAM error plots ----
+
+(FIGSX_E <- ggstripchart(filter(df, interaction != "No Synchrony" & Lag == "0"), 
+                   "interaction", 
+                   "residual_error_sd",
+                   color = "direction", 
+                   facet.by = c("Process_error"),
+                   size = 2, 
+                   position = position_jitterdodge(jitter.width = .1),
+                   alpha = .5) +
+    facet_wrap(~Process_error, dir = "v", labeller = as_labeller(facet_names)) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    labs(y = "Standard deviation of\nthe GAM residual error", #expression(mu~Percentile), 
+         x = "", 
+         col = "Trend") +
+    scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 14),
+          panel.grid.major.y = element_line(),
+          legend.position = "none") +
+    coord_cartesian(ylim = c(0,0.1)) +
+  geom_hline(yintercept = 0.05, lty = 2))
+#, width = 8.5, height = 8.79
+
+df$overlap100 <- df$overlap*100
+(FIGSX_F <- ggline(filter(df, interaction != "No Synchrony" & Lag == "0"), 
+                   "interaction", 
+                   "overlap100",
+                   color = "direction", 
+                   facet.by = c("Process_error"),
+                   point.size = 2, size = .3,
+                   add = c("mean_se")) +
+    facet_wrap(~Process_error, dir = "v", labeller = as_labeller(facet_names)) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+    labs(y = "Overlap between raw and smoothed\ngrowth rate distributions (%)", #expression(mu~Percentile), 
+         x = "", 
+         col = "Trend") +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 14),
+          panel.grid.major.y = element_line(),
+          legend.position = "none")) +
+  coord_cartesian(ylim = c(0, 20))
+
+FIGSX_E + FIGSX_F + plot_annotation(tag_levels = "a")
+ggsave("figures/figsupp_GAMerror.png", height = 7.76, width = 9.77)
+
+
+# FIG S: GAM predictions vs. simulation plots ----
+
+# import results
+results <- lapply(paste0("outputs/", list.files(path = "outputs/", pattern = "_results.RDS")[-1]), readRDS)
+names(results) <- gsub("_results.RDS", "", list.files(path = "outputs/", pattern = "_results.RDS")[-1])
+results <- bind_rows(results, .id = "scenario")
+
+# read results file
+df <- readRDS("outputs/all_results.RDS")
+
+# format interaction to show up on the plots in the right order
+df$interaction <- gsub("-0.2", "Strong Synchrony", df$interaction) 
+df$interaction <- gsub("-0.1", "Weak Synchrony", df$interaction) 
+df$interaction <- gsub("0.1", "Weak Asynchrony", df$interaction) 
+df$interaction <- gsub("0.2", "Strong Asynchrony", df$interaction) 
+df$interaction <- gsub("0", "No Synchrony", df$interaction) 
+df$interaction <- factor(df$interaction, 
+                         levels = c("Strong Asynchrony", "Weak Asynchrony", "No Synchrony", "Weak Synchrony", "Strong Synchrony"))
+# same with process error
+df$Process_error <- factor(df$Process_error, levels = c("0", "0.1", "0.2"))
+
+# combine with results including standard error for each step
+results$scenario <- uncertainty$scenario
+df_err <- inner_join(results, df)
+
+## comparing GAM predictions to simulated population sizes
+
+# plot difference between prediction and simulation
+ggplot(filter(df_err, Lag == "0")) +
+  geom_jitter(aes(y = (10^N_pred)-(10^N), 
+                  x = interaction, 
+                  col = direction), size = 1, alpha = .2, position = position_jitterdodge()) +
+  facet_wrap(~ Process_error, dir = "v", labeller = as_labeller(facet_names)) +
+  labs(x = "", y = expression(N[sim]~Delta~N[GAM]), col = "Trend") +
+  theme(legend.position = "top") +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+  ggpubr::theme_pubr() +
+  geom_hline(yintercept = 0, lwd = .3, lty = 2)
+ggsave("figures/figsupp_GAMpredictions.png", width = 6, height = 6)
+
+# plot standard error from the GAM predictions
+ggline(filter(df_err, Lag == "0"),
+       y = "N_se",
+       x = "interaction",
+       color = "direction",
+       facet.by = "Process_error",
+       point.size = 2, size = .3,
+       add = "mean_sd") +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  facet_wrap(~Process_error, dir = "v", labeller = as_labeller(facet_names)) +
+  labs(x = "", y = "GAM standard error", 
+       fill = "Scenario", col = "Scenario") +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+  theme(axis.text.x = element_text(size = 11),
+        axis.title = element_text(size = 14),
+        strip.text = element_text(size = 14),
+        panel.grid.major.y = element_line(),
+        legend.position = "top")
+ggsave("figures/figsupp_GAMerror.png", width = 8.5, height = 8.79)

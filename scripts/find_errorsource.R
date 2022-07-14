@@ -48,7 +48,7 @@ facet_names <- c(
 ggplot(filter(df_err, Lag == "0")) +
   geom_jitter(aes(y = (10^N_pred)-(10^N), 
                   x = interaction, 
-                  col = direction), size = 1, alpha = .5, position = position_jitterdodge()) +
+                  col = direction), size = 1, alpha = .2, position = position_jitterdodge()) +
   facet_wrap(~ Process_error, dir = "v", labeller = as_labeller(facet_names)) +
   labs(x = "", y = expression(N[sim]~Delta~N[GAM]), col = "Trend") +
   theme(legend.position = "top") +
@@ -84,8 +84,29 @@ ggplot(filter(df_err, Lag == "0")) +
                   x = interaction, 
                  fill = direction), alpha = .6, outlier.shape = NA) +
   facet_wrap(~Process_error, dir = "v", labeller = label_both) +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
   labs(x = "", y = "GAM standard error", fill = "Scenario", col = "Scenario") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "top")
+
+ggline(filter(df_err, Lag == "0"),
+       y = "N_se",
+       x = "interaction",
+       color = "direction",
+       facet.by = "Process_error",
+       point.size = 2, size = .3,
+       add = "mean_sd") +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  facet_wrap(~Process_error, dir = "v", labeller = as_labeller(facet_names)) +
+  labs(x = "", y = "GAM standard error", 
+       fill = "Scenario", col = "Scenario") +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+  theme(axis.text.x = element_text(size = 11),
+        axis.title = element_text(size = 14),
+        strip.text = element_text(size = 14),
+        panel.grid.major.y = element_line(),
+        legend.position = "top")
+
 ggsave("figures/figsupp_GAMerror.png", width = 8.5, height = 8.79)
 
 # # the bootstrapped confidence intervals always underestimate the error-propagated intervals
