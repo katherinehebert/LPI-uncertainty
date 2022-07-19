@@ -68,7 +68,7 @@ ONE_A <- ggplot(scenarios,
   geom_line(aes(y = N), lwd = .2) +
   labs(x = "", y = "Abundance (N)") + 
   scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)) +
-  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   facet_wrap(~interaction, nrow = 5) +
   theme(legend.position = "none",
         strip.text = element_text(face = "bold"))
@@ -81,8 +81,8 @@ ONE_B <- ggplot(df,
     geom_line(aes(y = LPI_final_true), lty = 2, lwd = .2) +
     geom_line(aes(y = LPI_final)) +
     format_lpiplots +
-  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
-  scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
+  scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   labs(col = "Trend", fill = "Trend") +
   facet_wrap(~interaction, nrow = 5) +
   theme(legend.position = "none",
@@ -93,8 +93,8 @@ ONE_C <- ggplot(df,
   geom_line(aes(y = lpi_correction), lty = 2, lwd = .2) +
   geom_line(aes(y = lpi_nocorrection)) +
   format_lpiplots +
-  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
-  scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
+  scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   labs(col = "Trend", fill = "Trend") +
   facet_wrap(~interaction, ncol = 5) +
   theme(legend.position = "none",
@@ -120,7 +120,7 @@ df <- dplyr::filter(df0, Lag == 0, Process_error == 0)
                   color = "direction", 
                   point.size = 2, size = .3,
                   add = c("mean_se")) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
          x = " ", 
          y = "Bias from the expected LPI") +
@@ -138,7 +138,7 @@ df <- dplyr::filter(df0, Lag == 0, Process_error == 0)
                   color = "direction", 
                   point.size = 2, size = .3,
                   add = c("mean_se")) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     geom_hline(aes(yintercept = 0.025), lty = 4, alpha = .4) +
     geom_hline(aes(yintercept = 0.5), lty = 2, alpha = .4) +
     geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
@@ -179,7 +179,7 @@ facet_names <- c(
                facet.by = "Process_error",
                add = c("mean_se")) +
   facet_wrap(~Process_error, dir = "h", labeller = as_labeller(facet_names)) + 
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   labs(color = "Trend",
        x = " ", 
        y = "Uncertainty bias of the LPI") +
@@ -201,7 +201,7 @@ facet_names <- c(
                 facet.by = "Process_error",
                 add = c("mean_se")) +
     facet_wrap(~Process_error, dir = "h", labeller = as_labeller(facet_names)) + #+
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
          x = " ", 
          y = "Variance of the LPI") +
@@ -233,7 +233,7 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
                   point.size = 2, size = .3,
                   add = c("mean_se")) +
     facet_wrap(~interaction, nrow =  1) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
          x = "Covariance lag", 
          y = "Bias from the\nexpected LPI") +
@@ -252,8 +252,8 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
                   point.size = 2, size = .3,
                   add = c("mean_se")) +
     facet_wrap(~interaction, nrow =  1) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
-    scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
+    scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     geom_hline(aes(yintercept = 0.025), lty = 4, alpha = .4) +
     geom_hline(aes(yintercept = 0.5), lty = 2, alpha = .4) +
     geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
@@ -271,7 +271,7 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
 (FIG4_A / FIG4_B + plot_annotation(tag_levels = "a")) 
 ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
 
-(FIG4_C <- ggline(df, 
+(FIG5_C <- ggline(df, 
                   "Lag", 
                   "lpi_bias",
                   color = "direction",
@@ -279,7 +279,7 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
                   point.size = 2, size = .3,
                   add = c("mean_se")) +
     facet_wrap(~interaction, nrow =  1) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
          x = "Covariance lag", 
          y = "Uncertainty bias of the LPI") +
@@ -299,7 +299,7 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
                   point.size = 2, size = .3,
                   add = c("mean_se")) +
     facet_wrap(~interaction, nrow =  1) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(y = "Variance of the LPI", #expression(mu~Percentile), 
          x = "Covariance lag", 
          col = "Direction\n of change", 
@@ -325,7 +325,7 @@ df <- dplyr::filter(df0, interaction != "No Synchrony")
                   point.size = 2, size = .3,
                   add = c("mean_se")) +
     facet_wrap(~Process_error+interaction, nrow = 3, ncol = 4, labeller = as_labeller(facet_names)) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
          x = "Covariance lag", 
          y = "Bias from the\nexpected LPI") +
@@ -346,8 +346,8 @@ ggsave("figures/figSX_lag_accuracy.png", width = 8.56, height = 8)
                   point.size = 2, size = .3,
                   add = c("mean_se")) +
     facet_wrap(~Process_error+interaction, nrow = 3, ncol = 4, labeller = as_labeller(facet_names)) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
-    scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
+    scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     geom_hline(aes(yintercept = 0.025), lty = 4, alpha = .4) +
     geom_hline(aes(yintercept = 0.5), lty = 2, alpha = .4) +
     geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
@@ -372,7 +372,7 @@ ggsave("figures/figSX_lag_percentile.png", width = 8.56, height = 8)
                   point.size = 2, size = .3,
                   add = c("mean_se")) +
     facet_wrap(~Process_error+interaction, nrow = 3, ncol = 4, labeller = as_labeller(facet_names)) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
          x = "Covariance lag", 
          y = "Uncertainty bias of the LPI") +
@@ -393,7 +393,7 @@ ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
                   point.size = 2, size = .3,
                   add = c("mean_se")) +
     facet_wrap(~Process_error+interaction, nrow = 3, ncol = 4, labeller = as_labeller(facet_names)) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(y = "Variance of the LPI", #expression(mu~Percentile), 
          x = "Covariance lag", 
          col = "Direction\n of change", 
@@ -418,7 +418,7 @@ ggsave("figures/figSX_lag_variance.png", width = 8.56, height = 8)
                    position = position_jitterdodge(jitter.width = .1),
                    alpha = .5) +
     facet_wrap(~Process_error, dir = "v", labeller = as_labeller(facet_names)) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(y = "Standard deviation of\nthe GAM residual error", #expression(mu~Percentile), 
          x = "", 
          col = "Trend") +
@@ -441,7 +441,7 @@ df$overlap100 <- df$overlap*100
                    point.size = 2, size = .3,
                    add = c("mean_se")) +
     facet_wrap(~Process_error, dir = "v", labeller = as_labeller(facet_names)) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
     labs(y = "Overlap between raw and smoothed\ngrowth rate distributions (%)", #expression(mu~Percentile), 
          x = "", 
@@ -492,7 +492,7 @@ ggplot(filter(df_err, Lag == "0")) +
   facet_wrap(~ Process_error, dir = "v", labeller = as_labeller(facet_names)) +
   labs(x = "", y = expression(N[sim]~Delta~N[GAM]), col = "Trend") +
   theme(legend.position = "top") +
-  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
   ggpubr::theme_pubr() +
   geom_hline(yintercept = 0, lwd = .3, lty = 2)
@@ -506,7 +506,7 @@ ggline(filter(df_err, Lag == "0"),
        facet.by = "Process_error",
        point.size = 2, size = .3,
        add = "mean_sd") +
-  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3,5)]) +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   facet_wrap(~Process_error, dir = "v", labeller = as_labeller(facet_names)) +
   labs(x = "", y = "GAM standard error", 
        fill = "Scenario", col = "Scenario") +
