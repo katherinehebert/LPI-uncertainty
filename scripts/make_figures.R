@@ -259,7 +259,7 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
     geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
     labs(y = "Percentile of the\nexpected LPI", 
          x = "Covariance lag", 
-         col = "Direction\n of change", 
+         col = "Trend", 
          fill = "Trend") +
     scale_x_discrete(labels = function(x) paste0("Lag-", x)) +
     theme(axis.text.x = element_text(size = 11),
@@ -353,13 +353,13 @@ ggsave("figures/figSX_lag_accuracy.png", width = 8.56, height = 8)
     geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
     labs(y = "Percentile of the\nexpected LPI", #expression(mu~Percentile), 
          x = "Covariance lag", 
-         col = "Direction\n of change", 
+         col = "Trend", 
          fill = "Trend") +
     scale_x_discrete(labels = function(x) paste0("Lag-", x)) +
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
-          legend.position = "none") +
+          legend.position = "top") +
     coord_cartesian(ylim = c(-0.1,1.1)) +
     scale_y_continuous(breaks = c(0.025, 0.5, 0.975)))
 ggsave("figures/figSX_lag_percentile.png", width = 8.56, height = 8)
@@ -396,14 +396,14 @@ ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(y = "Variance of the LPI", #expression(mu~Percentile), 
          x = "Covariance lag", 
-         col = "Direction\n of change", 
+         col = "Trend", 
          fill = "Trend") +
     scale_x_discrete(labels = function(x) paste0("Lag-", x)) +
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line(),
-          legend.position = "none") +
+          legend.position = "top") +
     coord_cartesian(ylim = c(0,0.1))) 
 ggsave("figures/figSX_lag_variance.png", width = 8.56, height = 8)
 
@@ -450,11 +450,11 @@ df$overlap100 <- df$overlap*100
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line(),
-          legend.position = "none")) +
+          legend.position = "right")) +
   coord_cartesian(ylim = c(0, 20))
 
 FIGSX_E + FIGSX_F + plot_annotation(tag_levels = "a")
-ggsave("figures/figsupp_GAMerror.png", height = 7.76, width = 9.77)
+ggsave("figures/figsupp_GAMerror.png", width = 10.2, height = 6.98)
 
 
 # FIG S: GAM predictions vs. simulation plots ----
@@ -479,13 +479,13 @@ df$interaction <- factor(df$interaction,
 df$Process_error <- factor(df$Process_error, levels = c("0", "0.1", "0.2"))
 
 # combine with results including standard error for each step
-results$scenario <- uncertainty$scenario
+#results$scenario <- uncertainty$scenario
 df_err <- inner_join(results, df)
 
 ## comparing GAM predictions to simulated population sizes
 
 # plot difference between prediction and simulation
-ggplot(filter(df_err, Lag == "0")) +
+ggplot(filter(df_err, Lag == "0" & time != 1)) +
   geom_jitter(aes(y = (10^N_pred)-(10^N), 
                   x = interaction, 
                   col = direction), size = 1, alpha = .2, position = position_jitterdodge()) +
