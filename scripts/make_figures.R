@@ -104,6 +104,26 @@ ONE_C <- ggplot(df,
 ONE_A + ONE_B + plot_annotation(tag_levels = 'a')
 ggsave("figures/fig1_trendoverview.png", height = 10.7, width = 5.6)
 
+# plot the simulated population trends
+ggplot(scenarios, 
+                aes(x = time, col = direction, group = interaction(popID, scenario))) +
+  geom_line(aes(y = N), lwd = .2) +
+  labs(x = "", y = "Abundance (N)") + 
+  scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)) +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
+  facet_wrap(~interaction, ncol = 5) +
+  theme(legend.position = "none",
+        strip.text = element_text(face = "bold"))
+ggsave("figures/presentation_trendoverview.png", width = 8.89, height = 2.2)
+
+ggplot(dplyr::filter(scenarios, scenario == "scenario1C"),
+       aes(x = time, col = popID)) +
+  geom_line(aes(y = N), lwd = .2) +
+  ggpubr::theme_transparent() +
+  theme(legend.position = "none")
+ggsave("figures/presentation_titleslide.png", width = 13.4, height = 5.45)
+
+
 #### remove time = 1 ----
 # bc it is just the baseline
 

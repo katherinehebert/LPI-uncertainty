@@ -32,10 +32,11 @@ K_plot <- data.frame(
 ggplot(K_plot) +
   geom_line(aes(x = time, y = K, col = scenario)) +
   labs(x = "", y = "Carrying capacity (K)", 
-       col = "Biodiversity change\n scenario") +
-  theme(legend.position = "right") +
+       col = "Trend") +
+  scale_color_manual(values = ggsci::pal_locuszoom("default")(6)[c(1,5,3)]) +
+  theme(legend.position = "none") +
   scale_x_continuous(breaks = c(1:10))
-ggsave("figures/carryingcapacity.png", width = 5.04, height = 3.38)
+ggsave("figures/carryingcapacity.png", width = 2.63, height = 2.38)
 
 
 ## SET 1: no covariance from interactions --------------------------------------
