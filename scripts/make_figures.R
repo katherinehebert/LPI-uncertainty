@@ -138,8 +138,8 @@ df <- dplyr::filter(df0, Lag == 0, Process_error == 0)
                   "interaction", 
                   "accuracy",
                   color = "direction", 
-                  point.size = 2, size = .3,
-                  add = c("mean_se")) +
+                  point.size = 2, size = .5,
+                  add = c("mean_sd")) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
          x = " ", 
@@ -156,8 +156,8 @@ df <- dplyr::filter(df0, Lag == 0, Process_error == 0)
                   "interaction", 
                   "percentile",
                   color = "direction", 
-                  point.size = 2, size = .3,
-                  add = c("mean_se")) +
+                  point.size = 2, size = .5,
+                  add = c("mean_sd")) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     geom_hline(aes(yintercept = 0.025), lty = 4, alpha = .4) +
     geom_hline(aes(yintercept = 0.5), lty = 2, alpha = .4) +
@@ -195,9 +195,9 @@ facet_names <- c(
                "interaction", 
                "lpi_bias",
                color = "direction", 
-               point.size = 2, size = .3,
+               point.size = 2, size = .5,
                facet.by = "Process_error",
-               add = c("mean_se")) +
+               add = c("mean_sd")) +
   facet_wrap(~Process_error, dir = "h", labeller = as_labeller(facet_names)) + 
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   labs(color = "Trend",
@@ -211,15 +211,15 @@ facet_names <- c(
         panel.grid.major.y = element_line(),
         legend.position = "top",
         panel.spacing.x = unit(4, "mm")) +
-  coord_cartesian(ylim = c(-0.25, 0.1)) +
+  coord_cartesian(ylim = c(-0.3, 0.1)) +
   geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG3_B <- ggline(df, 
                 "interaction", 
                 "lpi_variance",
                 color = "direction", 
-                point.size = 2, size = .3,
+                point.size = 2, size = .5,
                 facet.by = "Process_error",
-                add = c("mean_se")) +
+                add = c("mean_sd")) +
     facet_wrap(~Process_error, dir = "h", labeller = as_labeller(facet_names)) + #+
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
@@ -250,8 +250,8 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
                   "accuracy",
                   color = "direction",
                   facet.by = "interaction",
-                  point.size = 2, size = .3,
-                  add = c("mean_se")) +
+                  point.size = 2, size = .5,
+                  add = c("mean_sd")) +
     facet_wrap(~interaction, nrow =  1) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
@@ -269,8 +269,8 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
                   "percentile",
                   color = "direction", 
                   facet.by = "interaction",
-                  point.size = 2, size = .3,
-                  add = c("mean_se")) +
+                  point.size = 2, size = .5,
+                  add = c("mean_sd")) +
     facet_wrap(~interaction, nrow =  1) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
@@ -296,8 +296,8 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
                   "lpi_bias",
                   color = "direction",
                   facet.by = "interaction",
-                  point.size = 2, size = .3,
-                  add = c("mean_se")) +
+                  point.size = 2, size = .5,
+                  add = c("mean_sd")) +
     facet_wrap(~interaction, nrow =  1) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
@@ -316,8 +316,8 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
                   "lpi_variance",
                   color = "direction", 
                   facet.by = "interaction",
-                  point.size = 2, size = .3,
-                  add = c("mean_se")) +
+                  point.size = 2, size = .5,
+                  add = c("mean_sd")) +
     facet_wrap(~interaction, nrow =  1) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(y = "Variance of the LPI", #expression(mu~Percentile), 
@@ -343,7 +343,7 @@ df <- dplyr::filter(df0, interaction != "No Synchrony")
                   color = "direction",
                   facet.by = c("interaction", "Process_error"),
                   point.size = 2, size = .3,
-                  add = c("mean_se")) +
+                  add = c("mean_sd")) +
     facet_wrap(~Process_error+interaction, nrow = 3, ncol = 4, labeller = as_labeller(facet_names)) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
@@ -364,7 +364,7 @@ ggsave("figures/figSX_lag_accuracy.png", width = 8.56, height = 8)
                   color = "direction", 
                   facet.by = c("interaction", "Process_error"),
                   point.size = 2, size = .3,
-                  add = c("mean_se")) +
+                  add = c("mean_sd")) +
     facet_wrap(~Process_error+interaction, nrow = 3, ncol = 4, labeller = as_labeller(facet_names)) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
@@ -390,7 +390,7 @@ ggsave("figures/figSX_lag_percentile.png", width = 8.56, height = 8)
                   color = "direction",
                   facet.by = c("interaction", "Process_error"),
                   point.size = 2, size = .3,
-                  add = c("mean_se")) +
+                  add = c("mean_sd")) +
     facet_wrap(~Process_error+interaction, nrow = 3, ncol = 4, labeller = as_labeller(facet_names)) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
@@ -401,7 +401,7 @@ ggsave("figures/figSX_lag_percentile.png", width = 8.56, height = 8)
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+
-    coord_cartesian(ylim = c(-0.25, 0.1)) +
+    coord_cartesian(ylim = c(-0.3, 0.1)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
 
@@ -411,7 +411,7 @@ ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
                   color = "direction", 
                   facet.by = c("interaction", "Process_error"),
                   point.size = 2, size = .3,
-                  add = c("mean_se")) +
+                  add = c("mean_sd")) +
     facet_wrap(~Process_error+interaction, nrow = 3, ncol = 4, labeller = as_labeller(facet_names)) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(y = "Variance of the LPI", #expression(mu~Percentile), 
@@ -424,19 +424,18 @@ ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line(),
           legend.position = "top") +
-    coord_cartesian(ylim = c(0,0.1))) 
+    coord_cartesian(ylim = c(0,0.12))) 
 ggsave("figures/figSX_lag_variance.png", width = 8.56, height = 8)
 
 # FIG S: GAM error plots ----
 
-(FIGSX_E <- ggstripchart(filter(df, interaction != "No Synchrony" & Lag == "0"), 
-                   "interaction", 
-                   "residual_error_sd",
-                   color = "direction", 
-                   facet.by = c("Process_error"),
-                   size = 2, 
-                   position = position_jitterdodge(jitter.width = .1),
-                   alpha = .5) +
+(FIGSX_E <- ggline(filter(df0, interaction != "No Synchrony" & Lag == "0"), 
+          "interaction", 
+          "residual_error_sd",
+          color = "direction", 
+          facet.by = c("Process_error"),
+          point.size = 2, size = .3,
+          add = c("mean_sd")) +
     facet_wrap(~Process_error, dir = "v", labeller = as_labeller(facet_names)) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(y = "Standard deviation of\nthe GAM residual error", #expression(mu~Percentile), 
@@ -452,14 +451,14 @@ ggsave("figures/figSX_lag_variance.png", width = 8.56, height = 8)
   geom_hline(yintercept = 0.05, lty = 2))
 #, width = 8.5, height = 8.79
 
-df$overlap100 <- df$overlap*100
-(FIGSX_F <- ggline(filter(df, interaction != "No Synchrony" & Lag == "0"), 
+df0$overlap100 <- df0$overlap*100
+(FIGSX_F <- ggline(filter(df0, interaction != "No Synchrony" & Lag == "0"), 
                    "interaction", 
                    "overlap100",
                    color = "direction", 
                    facet.by = c("Process_error"),
                    point.size = 2, size = .3,
-                   add = c("mean_se")) +
+                   add = c("mean_sd")) +
     facet_wrap(~Process_error, dir = "v", labeller = as_labeller(facet_names)) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
