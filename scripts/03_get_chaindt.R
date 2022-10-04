@@ -1,4 +1,4 @@
-# Calculate dt as log ratio to compare with GAM dt
+# Calculate growth rates (dt) as log ratio to compare with GAM dt
 
 calc_dt_chain <- function(x){
   
