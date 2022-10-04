@@ -1,15 +1,19 @@
-# LPI-sensitivity
+# Testing the Living Planet Index's ability to capture complex biodiversity change
 
- Sensitivity tests on the Living Planet Index
+Code for simulations, calculations, and figures presented in the manuscript "Testing the Living Planet Index's ability to capture complex biodiversity change" by Hébert, Katherine & Gravel, Dominique.
 
-Steps:
+To produce the results in the manuscript, these scripts can be run:
 
-1. run_sims.R simulates population time series, calculates the LPI of these populations, and simulates a "true" set of populations without observation error.
-2. check_lpi.R calculates the LPI of the simulated populations with error and the true populations using the rlpi package. I have found some differences between my LPI and this rlpi version, so I will be basing myself on the rlpi results.
-3. gather_results.R gathers the results of these scripts into a dataframe of results about the accuracy and precision of the different LPIs.
-4. get_chaindt.R calculates the log-ratio growth rates of the simulated (error) populations for some comparisons.
-5. docs/accuracy_and_precision.Rmd then plots these results in various ways in their final form, which can then be used in the manuscript (in Ch1_manuscript repo).
+`01_run_sims.R`: Simulates population time series and simulates a "true" set of populations without observation error.
 
-To do:
+`02_calculate_lpi.R`: Calculates the LPI of the simulated populations with error and the true populations using the rlpi package. 
 
-temporary.R has code near the bottom to calculate the precision of the LPI, and it needs to be cleaned up into its own script and integrated into gather_results.R. 
+`03_get_chaindt.R`: Calculates the log-ratio growth rates of the simulated populations for some comparisons with the smoothed growth rates in the LPI calculation.
+
+`04_propagate_uncertainty.R`: Calculates the propagated uncertainty from noise in the raw data, through to the final LPI trend, following equations developed in the manuscript.
+
+`05_get_precision.R`: Calculates some measures of precision about the LPI trend.
+
+`06_gather_results.R`: Gathers the results of these scripts into a dataframe of results about the accuracy and uncertainty of the LPIs, in preparation for plotting.
+
+`07_make_figures.R`: Generates the figures presented in the main manuscript, and the supplementary matrials.
