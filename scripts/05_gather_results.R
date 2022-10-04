@@ -9,14 +9,6 @@ theme_set(ggpubr::theme_pubr())
 
 # loading outputs ----
 
-# ## MY LPI ##
-# 
-# # import results of each scenario's LPI
-# lpi <- lapply(paste0("outputs/", list.files(path = "outputs/", pattern = "_lpi.RDS")), readRDS)
-# names(lpi) <- gsub("_lpi.RDS", "", list.files(path = "outputs/", pattern = "_lpi.RDS"))
-# # and bind into one data frame
-# lpi <- dplyr::bind_rows(lpi, .id = "scenario")
-
 ## RLPI ##
 
 # import results from rlpi package

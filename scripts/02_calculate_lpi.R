@@ -1,12 +1,4 @@
-# script to check that the calculated LPI corresponds to the same as would be
-# obtained from the rlpi package
-
-# i.e. calculate the LPI with the rlpi functions to ensure it's correct
-
-# my CI are bigger than the rlpi's
-# mine is slighly higher when it's decline, and slightly lower when it's growth
-
-# so there must be rounding issues, but it is still quite similar
+# Script to calculate the LPI from the simulated populations using the rlpi package
 
 # clear workspace
 rm(list=ls())
@@ -17,10 +9,17 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-            
-### calculate true LPI with rlpi
+# source customised LPI functions
+source('~/Documents/GitHub/LPI-sensitivity/scripts/LPIMain.R')
+source('~/Documents/GitHub/LPI-sensitivity/scripts/CalcLPI.R') # saves the GAMs
+source('~/Documents/GitHub/LPI-sensitivity/scripts/ProcessFile.R', echo=TRUE)
 
-lpi_truechecker <- function(scenario_name){
+# set ggplot theme for plots
+theme_set(theme_linedraw())
+
+### Salculate LPI on simualted pops without noise
+
+lpi_true <- function(scenario_name){
   
   # import simulated population
   sim <- readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/outputs/", scenario_name, "_true.RDS"))
@@ -70,40 +69,6 @@ lpi_truechecker <- function(scenario_name){
     labs(x = "", y = "LPI") +
     theme(legend.position = "none")
   ggsave(paste0("figures/", scenario_name, "_true_rlpi.png"))
-  
-  
-  ## check the difference between LPI and my calculated version...
-  
-  sim_lpi <- readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/outputs/", scenario_name, "_lpi.RDS"))
-  sim_lpi$time <- sim_lpi$time + 1969
-  
-  # Plot the resulting indices to compare them, and save it
-  
-  # make palette with names
-  pal = c("rLPI" = "red", "myLPI" = "blue")
-  ggplot() +
-    # rlpi LPI
-    geom_line(data = lpi, aes(x = time, 
-                              y = LPI_final, 
-                              col = "rLPI")) + 
-    # my calculation
-    geom_line(data = sim_lpi, aes(x = time, 
-                                  y = LPI_boot, 
-                                  col = "myLPI")) +
-    scale_fill_manual(values = pal) +
-    scale_color_manual(values = pal) +
-    labs(fill = "Source", col = "Source")
-  ggsave(paste0("figures/", scenario_name, "_lpicheck_true.png"))
-  
-  
-  # make a table with the results
-  checker_df <- data.frame(
-    "scenario" = scenario_name,
-    "LPI_diff" = sim_lpi$LPI_boot - lpi$LPI_final,
-    "time" = sim_lpi$time - 1969
-  )
-  saveRDS(checker_df, paste0("outputs/", scenario_name, "_lpicheck_true.RDS"))
-  
 }
 
 # get all scenario names
@@ -116,19 +81,11 @@ sim_names <- c(
   paste0("scenario6", LETTERS[1:18]),
   paste0("scenario7", LETTERS[1:18])
 )
-lapply(sim_names, lpi_truechecker)
+lapply(sim_names, lpi_true)
 
+## Calculate LPI on simulated pops with noise
 
-
-
-# source customised LPI functions
-source('~/Documents/GitHub/LPI-sensitivity/scripts/LPIMain.R')
-source('~/Documents/GitHub/LPI-sensitivity/scripts/CalcLPI.R') # saves the GAMs
-source('~/Documents/GitHub/LPI-sensitivity/scripts/ProcessFile.R', echo=TRUE)
-
-theme_set(theme_linedraw())
-
-lpi_checker <- function(scenario_name){
+lpi_calculator <- function(scenario_name){
   
   # import simulated population
   sim <- readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/simulations/", scenario_name, "_l.RDS"))
@@ -181,51 +138,6 @@ lpi_checker <- function(scenario_name){
     labs(x = "", y = "LPI") +
     theme(legend.position = "none")
   ggsave(paste0("figures/", scenario_name, "_rlpi.png"))
-  
-  
-  ## check the difference between LPI and my calculated version...
-  
-  sim_lpi <- readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/outputs/", scenario_name, "_lpi.RDS"))
-  sim_lpi$time <- sim_lpi$time + 1969
-  
-  # Plot the resulting indices to compare them, and save it
-  
-  # make palette with names
-  pal = c("rLPI" = "red", "myLPI" = "blue")
-  ggplot() +
-    # rlpi LPI
-    geom_ribbon(data = lpi, aes(x = time, 
-                                ymin = CI_low, 
-                                ymax = CI_high,
-                                fill = "rLPI"), alpha = .2) +
-    geom_line(data = lpi, aes(x = time, 
-                              y = LPI_final, 
-                              col = "rLPI")) + 
-    # my calculation
-    geom_ribbon(data = sim_lpi, aes(x = time, 
-                                    ymin = cilo_boot, 
-                                    ymax = cihi_boot, 
-                                    fill = "myLPI"), 
-                alpha = .2) +
-    geom_line(data = sim_lpi, aes(x = time, 
-                                  y = LPI_boot, 
-                                  col = "myLPI")) +
-    scale_fill_manual(values = pal) +
-    scale_color_manual(values = pal) +
-    labs(fill = "Source", col = "Source")
-  ggsave(paste0("figures/", scenario_name, "_lpicheck.png"))
-  
-  
-  # make a table with the results
-  checker_df <- data.frame(
-    "scenario" = scenario_name,
-    "LPI_diff" = sim_lpi$LPI_boot - lpi$LPI_final,
-    "cilo_diff" = sim_lpi$cilo_boot - lpi$CI_low,
-    "cihi_diff" = sim_lpi$cihi_boot - lpi$CI_high,
-    "time" = sim_lpi$time - 1969
-  )
-  saveRDS(checker_df, paste0("outputs/", scenario_name, "_lpicheck.RDS"))
-  
 }
 
 
