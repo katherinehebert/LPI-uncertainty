@@ -66,13 +66,12 @@ scenarios$dt_chain[which(scenarios$time == 1)] <- 0
 ONE_A <- ggplot(scenarios, 
        aes(x = time, col = direction, group = interaction(popID, scenario))) +
   geom_line(aes(y = N), lwd = .2) +
-  labs(x = "", y = "Abundance (N)") + 
+  labs(x = "", y = "Abundance (N)", col = "Trend") + 
   scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)) +
   scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   facet_wrap(~interaction, nrow = 5) +
   theme(legend.position = "none",
         strip.text = element_text(face = "bold"))
-
 # plot the corresponding lpi trends
 ONE_B <- ggplot(df, 
        aes(x = time, col = direction, group = scenario)) +
@@ -85,7 +84,7 @@ ONE_B <- ggplot(df,
   scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   labs(col = "Trend", fill = "Trend") +
   facet_wrap(~interaction, nrow = 5) +
-  theme(legend.position = "none",
+  theme(legend.position = "right",
         strip.text = element_text(face = "bold"))
 
 ONE_C <- ggplot(df, 
@@ -101,8 +100,8 @@ ONE_C <- ggplot(df,
         strip.text = element_text(face = "bold"))
 
 # put together and save
-ONE_A + ONE_B + plot_annotation(tag_levels = 'a')
-ggsave("figures/fig1_trendoverview.png", height = 10.7, width = 5.6)
+(ONE_A + ONE_B + plot_annotation(tag_levels = 'a') )
+ggsave("figures/fig1_trendoverview.png", height = 7, width = 6)
 
 # plot the simulated population trends
 ggplot(scenarios, 
@@ -116,12 +115,12 @@ ggplot(scenarios,
         strip.text = element_text(face = "bold"))
 ggsave("figures/presentation_trendoverview.png", width = 8.89, height = 2.2)
 
-ggplot(dplyr::filter(scenarios, scenario == "scenario1C"),
-       aes(x = time, col = popID)) +
-  geom_line(aes(y = N), lwd = .2) +
-  ggpubr::theme_transparent() +
-  theme(legend.position = "none")
-ggsave("figures/presentation_titleslide.png", width = 13.4, height = 5.45)
+# ggplot(dplyr::filter(scenarios, scenario == "scenario1C"),
+#        aes(x = time, col = popID)) +
+#   geom_line(aes(y = N), lwd = .2) +
+#   ggpubr::theme_transparent() +
+#   theme(legend.position = "none")
+# ggsave("figures/presentation_titleslide.png", width = 13.4, height = 5.45)
 
 
 #### remove time = 1 ----
@@ -164,16 +163,19 @@ df <- dplyr::filter(df0, Lag == 0, Process_error == 0)
     geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
     labs(y = "Percentile of the expected LPI", #expression(mu~Percentile), 
          x = "", 
-         col = "Direction\n of change", 
+         col = "Trend", 
          fill = "Trend") +
     scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
-          legend.position = "right") +
+          legend.position = "bottom") +
     coord_cartesian(ylim = c(-0.1,1.1)) +
     scale_y_continuous(breaks = c(0.025, 0.5, 0.975)))
-(FIG2_A + FIG2_B + plot_annotation(tag_levels = "a")) 
+FIG2_leg <- ggpubr::get_legend(FIG2_B) %>% as_ggplot()
+((FIG2_leg / (FIG2_A + (FIG2_B + theme(legend.position = "none")))) + 
+    plot_annotation(tag_levels = "a")) +
+  plot_layout(height = c(1,5))
 ggsave("figures/fig2_accuracy.png", width = 12.4, height = 5.14)
 
 
