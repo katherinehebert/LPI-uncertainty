@@ -66,7 +66,7 @@ scenarios$dt_chain[which(scenarios$time == 1)] <- 0
 ONE_A <- ggplot(scenarios, 
        aes(x = time, col = direction, group = interaction(popID, scenario))) +
   geom_line(aes(y = N), lwd = .2) +
-  labs(x = "", y = "Abundance (N)", col = "Trend") + 
+  labs(x = "Time", y = "Abundance (N)", col = "Trend") + 
   scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)) +
   scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   facet_wrap(~interaction, nrow = 5) +
@@ -82,7 +82,7 @@ ONE_B <- ggplot(df,
     format_lpiplots +
   scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-  labs(col = "Trend", fill = "Trend") +
+  labs(x = "Time", col = "Trend", fill = "Trend") +
   facet_wrap(~interaction, nrow = 5) +
   theme(legend.position = "right",
         strip.text = element_text(face = "bold"))
