@@ -215,55 +215,55 @@ lapply(sim_ids, compare_precision)
 
 # import true LPI values (no error)
 # get all scenario names
-sim_ids <- c(
-  paste0("1", LETTERS[1:9]),
-  paste0("2", LETTERS[1:18]),
-  paste0("3", LETTERS[1:18]),
-  paste0("4", LETTERS[1:18]),
-  paste0("5", LETTERS[1:18]),
-  paste0("6", LETTERS[1:18]),
-  paste0("7", LETTERS[1:18])
-)
-gams <- lapply(sim_ids, function(x) readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/models/rlpi/scenario", x, ".rds")))
-se <- lapply(gams, predict, se.fit = TRUE)
-
-gamse <- list()
-for(i in 1:length(se)) {
-  gamse[[i]] <- data.frame("se" = se[[i]]$se.fit)
-  colnames(gamse[[i]]) <- sim_ids[i]
-}
-gamse <- bind_cols(gamse)
-
-pdf("outputs/measurementerror_vs_GAMerror.pdf")
-
-boxplot(gamse[,grep("1", colnames(gamse))], ylim = c(0, 0.1), 
-        col = c("tomato2", "dodgerblue2", "mediumseagreen")) # attempt
-abline(h = 0.05, lty = 2)
-
-boxplot(gamse[,grep("2", colnames(gamse))], ylim = c(0, 0.1), 
-        col = c("tomato2", "dodgerblue2", "mediumseagreen"))
-abline(h = 0.05, lty = 2)
-
-boxplot(gamse[,grep("3", colnames(gamse))], ylim = c(0, 0.1), 
-        col = c("tomato2", "dodgerblue2", "mediumseagreen"))
-abline(h = 0.05, lty = 2)
-
-boxplot(gamse[,grep("4", colnames(gamse))], ylim = c(0, 0.1), 
-        col = c("tomato2", "dodgerblue2", "mediumseagreen"))
-abline(h = 0.05, lty = 2)
-
-boxplot(gamse[,grep("5", colnames(gamse))], ylim = c(0, 0.1), 
-        col = c("tomato2", "dodgerblue2", "mediumseagreen"))
-abline(h = 0.05, lty = 2)
-
-boxplot(gamse[,grep("6", colnames(gamse))], ylim = c(0, 0.1), 
-        col = c("tomato2", "dodgerblue2", "mediumseagreen"))
-abline(h = 0.05, lty = 2)
-
-boxplot(gamse[,grep("7", colnames(gamse))], ylim = c(0, 0.1))
-abline(h = 0.05, lty = 2)
-
-dev.off()
+# sim_ids <- c(
+#   paste0("1", LETTERS[1:9]),
+#   paste0("2", LETTERS[1:18]),
+#   paste0("3", LETTERS[1:18]),
+#   paste0("4", LETTERS[1:18]),
+#   paste0("5", LETTERS[1:18]),
+#   paste0("6", LETTERS[1:18]),
+#   paste0("7", LETTERS[1:18])
+# )
+# gams <- lapply(sim_ids, function(x) readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/models/rlpi/scenario", x, ".rds")))
+# se <- lapply(gams, predict, se.fit = TRUE)
+# 
+# gamse <- list()
+# for(i in 1:length(se)) {
+#   gamse[[i]] <- data.frame("se" = se[[i]]$se.fit)
+#   colnames(gamse[[i]]) <- sim_ids[i]
+# }
+# gamse <- bind_cols(gamse)
+# 
+# pdf("outputs/measurementerror_vs_GAMerror.pdf")
+# 
+# boxplot(gamse[,grep("1", colnames(gamse))], ylim = c(0, 0.1), 
+#         col = c("tomato2", "dodgerblue2", "mediumseagreen")) # attempt
+# abline(h = 0.05, lty = 2)
+# 
+# boxplot(gamse[,grep("2", colnames(gamse))], ylim = c(0, 0.1), 
+#         col = c("tomato2", "dodgerblue2", "mediumseagreen"))
+# abline(h = 0.05, lty = 2)
+# 
+# boxplot(gamse[,grep("3", colnames(gamse))], ylim = c(0, 0.1), 
+#         col = c("tomato2", "dodgerblue2", "mediumseagreen"))
+# abline(h = 0.05, lty = 2)
+# 
+# boxplot(gamse[,grep("4", colnames(gamse))], ylim = c(0, 0.1), 
+#         col = c("tomato2", "dodgerblue2", "mediumseagreen"))
+# abline(h = 0.05, lty = 2)
+# 
+# boxplot(gamse[,grep("5", colnames(gamse))], ylim = c(0, 0.1), 
+#         col = c("tomato2", "dodgerblue2", "mediumseagreen"))
+# abline(h = 0.05, lty = 2)
+# 
+# boxplot(gamse[,grep("6", colnames(gamse))], ylim = c(0, 0.1), 
+#         col = c("tomato2", "dodgerblue2", "mediumseagreen"))
+# abline(h = 0.05, lty = 2)
+# 
+# boxplot(gamse[,grep("7", colnames(gamse))], ylim = c(0, 0.1))
+# abline(h = 0.05, lty = 2)
+# 
+# dev.off()
 
 # ## get residual error from the GAMs
 # 

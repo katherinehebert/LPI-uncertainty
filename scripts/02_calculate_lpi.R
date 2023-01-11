@@ -32,8 +32,8 @@ lpi_true <- function(scenario_name){
   simw <- pivot_wider(sim, names_from = time, values_from = N)
   
   # create ID and Binomial columns
-  simw$ID <- 1:20
-  simw$Binomial <- LETTERS[1:20]
+  simw$ID <- 1:2000
+  simw$Binomial <- stringi::stri_rand_strings(2000, 5, "[a-z]")
   
   # Constructing infiles from a populations table
   
@@ -97,8 +97,8 @@ lpi_calculator <- function(scenario_name){
   simw <- pivot_wider(sim, names_from = time, values_from = N)
   
   # create ID and Binomial columns
-  simw$ID <- 1:20
-  simw$Binomial <- LETTERS[1:20]
+  simw$ID <- 1:2000
+  simw$Binomial <- stringi::stri_rand_strings(2000, 5, "[a-z]")
   
   # Constructing infiles from a populations table
   
