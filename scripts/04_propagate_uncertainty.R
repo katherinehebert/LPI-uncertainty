@@ -18,7 +18,7 @@ for(scenarioID in scenarios){
   Nparams <- readRDS(paste0("simulations/scenario", scenarioID, "_params.RDS"))
   
   # get sigmas
-  sigma_m <- dplyr::filter(Nparams, parameter == "Observation error")[,2:3] %>% as.vector()
+  sigma_m <- dplyr::filter(Nparams, parameter == "Observation error")[,2:3] %>% as.vector() %>% log10()
   sigma_p <- dplyr::filter(Nparams, parameter == "Process error")[,2:3] %>% as.vector()
   
   
@@ -113,7 +113,7 @@ for(scenarioID in scenarios){
   dt_cov <- cov(dt, use = "pairwise.complete.obs")
   dt_cov <- dt_cov[which(lower.tri(dt_cov))]
   
-  var_dtbar = (1/nrow(N))*(apply(var_dt, 1, sum) + 2*sum(dt_cov))
+  var_dtbar = (1/nrow(N))*(apply(var_dt, 1, sum) + 2*sum(dt_cov)) # FLAG ---- 
   
   #plot(var_dtbar, type = "l")
   
@@ -172,7 +172,7 @@ for(scenarioID in scenarios){
 ## check out the results ------
 
 ## load the results
-res <- lapply(paste0("outputs/", list.files("outputs/", "_uncertaintypropagation.RDS")[-1]), readRDS)
+res <- lapply(paste0("outputs/", list.files("outputs/", "_uncertaintypropagation.RDS")[-c(1,2)]), readRDS)
 names(res) <- scenarios
 res <- bind_rows(res, .id = "scenario")
 res$scenario <- paste0("scenario", res$scenario)

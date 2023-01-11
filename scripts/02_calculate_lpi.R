@@ -17,7 +17,7 @@ source('~/Documents/GitHub/LPI-sensitivity/scripts/ProcessFile.R', echo=TRUE)
 # set ggplot theme for plots
 theme_set(theme_linedraw())
 
-### Salculate LPI on simualted pops without noise
+### Calculate LPI on simulated pops without noise
 
 lpi_true <- function(scenario_name){
   
@@ -152,5 +152,5 @@ sim_names <- c(
   paste0("scenario7", LETTERS[1:18])
 )
 # apply to all simulations
-lapply(sim_names, lpi_checker)              
+lapply(sim_names, lpi_calculator)              
 

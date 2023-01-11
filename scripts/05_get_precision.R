@@ -63,7 +63,7 @@ compare_precision <- function(simID){
   dt_compare <- pivot_longer(dt_compare_w, cols = c(bootstrap, chain), names_to = "type", values_to = "lpi")
   
   # per year #### IMPORTANT ONE #######
-  ggplot(dt_compare, aes(y = year, x = lpi, lty = type, fill = factor(stat(quantile)))) +
+  ggplot(dt_compare, aes(y = year, x = lpi, lty = type, fill = factor(stat(quantile, na.rm = TRUE)))) +
     stat_density_ridges(geom = "density_ridges_gradient", 
                         alpha = .7, lwd = 0, 
                         calc_ecdf = TRUE,
@@ -86,16 +86,16 @@ compare_precision <- function(simID){
   # initialise a data frame to store results
   df <- data.frame(
     "time" = colnames(bootstrap_w),
-    "mean_rlpi" = apply(bootstrap_w, 2, mean),
-    "mean_chain" = apply(chain_w, 2, mean),
-    "sd_rlpi" = apply(bootstrap_w, 2, sd),
-    "sd_chain" = apply(chain_w, 2, mean),
-    "q025_rlpi" = apply(bootstrap_w, 2, quantile, probs = .025),
-    "q500_rlpi" = apply(bootstrap_w, 2, quantile, probs = .5),
-    "q975_rlpi" = apply(bootstrap_w, 2, quantile, probs = .975),
-    "q025_chain" = apply(chain_w, 2, quantile, probs = .025),
-    "q500_chain" = apply(chain_w, 2, quantile, probs = .5),
-    "q975_chain" = apply(chain_w, 2, quantile, probs = .975)
+    "mean_rlpi" = apply(bootstrap_w, 2, mean, na.rm = TRUE),
+    "mean_chain" = apply(chain_w, 2, mean, na.rm = TRUE),
+    "sd_rlpi" = apply(bootstrap_w, 2, sd, na.rm = TRUE),
+    "sd_chain" = apply(chain_w, 2, mean, na.rm = TRUE),
+    "q025_rlpi" = apply(bootstrap_w, 2, quantile, probs = .025, na.rm = TRUE),
+    "q500_rlpi" = apply(bootstrap_w, 2, quantile, probs = .5, na.rm = TRUE),
+    "q975_rlpi" = apply(bootstrap_w, 2, quantile, probs = .975, na.rm = TRUE),
+    "q025_chain" = apply(chain_w, 2, quantile, probs = .025, na.rm = TRUE),
+    "q500_chain" = apply(chain_w, 2, quantile, probs = .5, na.rm = TRUE),
+    "q975_chain" = apply(chain_w, 2, quantile, probs = .975, na.rm = TRUE)
   )
   # join with true lpi dataset
   df <- left_join(df, subset(true, select = c(time, LPI_final)))
@@ -196,7 +196,7 @@ sim_ids <- c(
   paste0("2", LETTERS[1:18]),
   paste0("3", LETTERS[1:18]),
   paste0("4", LETTERS[1:18]),
-  paste0("5", LETTERS[1:18]),
+  paste0("5", LETTERS[1:18]), 
   paste0("6", LETTERS[1:18]),
   paste0("7", LETTERS[1:18])
 )

@@ -213,7 +213,7 @@ facet_names <- c(
         panel.grid.major.y = element_line(),
         legend.position = "top",
         panel.spacing.x = unit(4, "mm")) +
-  coord_cartesian(ylim = c(-0.3, 0.1)) +
+  #coord_cartesian(ylim = c(-0.3, 0.1)) +
   geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG3_B <- ggline(df, 
                 "interaction", 
@@ -235,7 +235,7 @@ facet_names <- c(
           panel.grid.major.y = element_line(),
           legend.position = "none",
           panel.spacing.x = unit(4, "mm")) +
-    coord_cartesian(ylim = c(0, 0.1)))
+    coord_cartesian(ylim = c(0, 0.5)))
 (FIG3_A / FIG3_B + plot_annotation(tag_levels = "a")) 
 ggsave("figures/fig3_uncertainty.png", width = 10.9, height = 7.7)
 
@@ -264,7 +264,7 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+
-    coord_cartesian(ylim = c(-0.05, 0.05)) +
+    #coord_cartesian(ylim = c(-0.05, 0.05)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG4_B <- ggline(df, 
                   "Lag", 
@@ -288,7 +288,7 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
           legend.position = "none") +
-    coord_cartesian(ylim = c(-0.1,1.1)) +
+    #coord_cartesian(ylim = c(-0.1,1.1)) +
     scale_y_continuous(breaks = c(0.025, 0.5, 0.975)))
 (FIG4_A / FIG4_B + plot_annotation(tag_levels = "a")) 
 ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
@@ -311,7 +311,7 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+#,
     #legend.position = "none") +
-    coord_cartesian(ylim = c(-0.25, 0.1)) +
+    coord_cartesian(ylim = c(-0.6, 0.1)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG5_D <- ggline(df, 
                   "Lag", 
@@ -330,8 +330,9 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
-          legend.position = "none") +
-    coord_cartesian(ylim = c(0,0.1))) 
+          legend.position = "none") #+
+    #coord_cartesian(ylim = c(0,0.1))
+  ) 
 (FIG5_C / FIG5_D + plot_annotation(tag_levels = "a")) 
 ggsave("figures/fig5_lag_uncertainty.png", width = 8.56, height = 6.77)
 
@@ -356,7 +357,7 @@ df <- dplyr::filter(df0, interaction != "No Synchrony")
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+
-    coord_cartesian(ylim = c(-0.05, 0.05)) +
+    #coord_cartesian(ylim = c(-0.05, 0.05)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 ggsave("figures/figSX_lag_accuracy.png", width = 8.56, height = 8)
 
@@ -403,7 +404,7 @@ ggsave("figures/figSX_lag_percentile.png", width = 8.56, height = 8)
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+
-    coord_cartesian(ylim = c(-0.3, 0.1)) +
+    coord_cartesian(ylim = c(-0.6, 0.1)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
 
@@ -425,8 +426,9 @@ ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line(),
-          legend.position = "top") +
-    coord_cartesian(ylim = c(0,0.12))) 
+          legend.position = "top") #+
+    #coord_cartesian(ylim = c(0,0.12))
+  ) 
 ggsave("figures/figSX_lag_variance.png", width = 8.56, height = 8)
 
 # FIG S: GAM error plots ----
@@ -449,7 +451,7 @@ ggsave("figures/figSX_lag_variance.png", width = 8.56, height = 8)
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line(),
           legend.position = "none") +
-    coord_cartesian(ylim = c(0,0.1)) +
+    coord_cartesian(ylim = c(0,0.2)) +
   geom_hline(yintercept = 0.05, lty = 2))
 #, width = 8.5, height = 8.79
 
@@ -537,4 +539,4 @@ ggline(filter(df_err, Lag == "0"),
         strip.text = element_text(size = 14),
         panel.grid.major.y = element_line(),
         legend.position = "top")
-ggsave("figures/figsupp_GAMerror.png", width = 8.5, height = 8.79)
+#ggsave("figures/figsupp_.png", width = 8.5, height = 8.79)

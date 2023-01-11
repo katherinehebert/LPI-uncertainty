@@ -14,12 +14,12 @@ theme_set(ggpubr::theme_pubr())
 ## COMMON PARAMS ---------------------------------------------------------------
 pop_pairs = 10
 steps = 11
-obs = 0.05
+obs = 5
 
 ## CARRYING CAPACITY SCENARIOS -------------------------------------------------
-K_increase = 100 + 5*c(0:10)
+K_increase = 100 + 10*c(0:10)
 K_stable = rep(100, 11)
-K_decline = 100 - 2.5*c(0:10)
+K_decline = 100 - 5*c(0:10)
 # plot these!
 K_plot <- data.frame(
   time = 1:steps,
@@ -74,18 +74,16 @@ for(i in 1:length(sim_names)){
     K = K_scenarios[[i]],
     lag_value = 0
   )
-  make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
-            lambda_i = 1.5, lambda_j = 1.5,
-            alpha_ij = 0, alpha_ji = 0,
-            process = proc_error[i],
-            K = K_scenarios[[i]],
-            lag_value = 0)
-  make_gam(filename)
-  get_lpi(filename)
+  # make_true(n_pairs = pop_pairs, timesteps = steps,
+  #           N0i = 100, N0j = 100,
+  #           lambda_i = 1.5, lambda_j = 1.5,
+  #           alpha_ij = 0, alpha_ji = 0,
+  #           process = proc_error[i],
+  #           K = K_scenarios[[i]],
+  #           lag_value = 0)
+  # make_gam(filename)
+  # get_lpi(filename)
 }
-
-
 
 ## SET 2: negative covariance from interactions --------------------------------
 
@@ -125,15 +123,15 @@ for(i in 1:length(sim_names)){
     K = K_scenarios[[i]],
     lag_value = 0
   )
-  make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
-            lambda_i = 1.5, lambda_j = 1.5,
-            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
-            process = proc_error[i],
-            K = K_scenarios[[i]],
-            lag_value = 0)
-  make_gam(filename)
-  get_lpi(filename)
+  # make_true(n_pairs = pop_pairs, timesteps = steps,
+  #           N0i = 100, N0j = 100,
+  #           lambda_i = 1.5, lambda_j = 1.5,
+  #           alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+  #           process = proc_error[i],
+  #           K = K_scenarios[[i]],
+  #           lag_value = 0)
+  # make_gam(filename)
+  # get_lpi(filename)
 }
 
 
@@ -174,16 +172,16 @@ for(i in 1:length(sim_names)){
     K = K_scenarios[[i]],
     lag_value = 0
   )
-  make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
-            lambda_i = 1.5, lambda_j = 1.5,
-            alpha_ij = alphas[[i]][1], 
-            alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
-            K = K_scenarios[[i]],
-            process = proc_error[i],
-            lag_value = 0)
-  make_gam(filename)
-  get_lpi(filename)
+  # make_true(n_pairs = pop_pairs, timesteps = steps,
+  #           N0i = 100, N0j = 100,
+  #           lambda_i = 1.5, lambda_j = 1.5,
+  #           alpha_ij = alphas[[i]][1], 
+  #           alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+  #           K = K_scenarios[[i]],
+  #           process = proc_error[i],
+  #           lag_value = 0)
+  # make_gam(filename)
+  # get_lpi(filename)
 }
 
 ## SET 4: LAG-1 negative covariance from interactions --------------------------
@@ -224,15 +222,15 @@ for(i in 1:length(sim_names)){
     K = K_scenarios[[i]],
     lag_value = 1
   )
-  make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
-            lambda_i = 1.5, lambda_j = 1.5,
-            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
-            K = K_scenarios[[i]],
-            process = proc_error[i],
-            lag_value = 1)
-  make_gam(filename)
-  get_lpi(filename)
+  # make_true(n_pairs = pop_pairs, timesteps = steps,
+  #           N0i = 100, N0j = 100,
+  #           lambda_i = 1.5, lambda_j = 1.5,
+  #           alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+  #           K = K_scenarios[[i]],
+  #           process = proc_error[i],
+  #           lag_value = 1)
+  # make_gam(filename)
+  # get_lpi(filename)
 }
 
 
@@ -273,15 +271,15 @@ for(i in 1:length(sim_names)){
     K = K_scenarios[[i]],
     lag_value = 1
   )
-  make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
-            lambda_i = 1.5, lambda_j = 1.5,
-            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
-            process = proc_error[i],
-            K = K_scenarios[[i]],
-            lag_value = 1)
-  make_gam(filename)
-  get_lpi(filename)
+  # make_true(n_pairs = pop_pairs, timesteps = steps,
+  #           N0i = 100, N0j = 100,
+  #           lambda_i = 1.5, lambda_j = 1.5,
+  #           alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+  #           process = proc_error[i],
+  #           K = K_scenarios[[i]],
+  #           lag_value = 1)
+  # make_gam(filename)
+  # get_lpi(filename)
 }
 
 ## SET 6: LAG-2 negative covariance from interactions --------------------------
@@ -321,15 +319,15 @@ for(i in 1:length(sim_names)){
     K = K_scenarios[[i]],
     lag_value = 2
   )
-  make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
-            lambda_i = 1.5, lambda_j = 1.5,
-            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
-            K = K_scenarios[[i]],
-            process = proc_error[i],
-            lag_value = 2)
-  make_gam(filename)
-  get_lpi(filename)
+  # make_true(n_pairs = pop_pairs, timesteps = steps,
+  #           N0i = 100, N0j = 100,
+  #           lambda_i = 1.5, lambda_j = 1.5,
+  #           alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+  #           K = K_scenarios[[i]],
+  #           process = proc_error[i],
+  #           lag_value = 2)
+  # make_gam(filename)
+  # get_lpi(filename)
 }
 
 
@@ -370,13 +368,13 @@ for(i in 1:length(sim_names)){
     K = K_scenarios[[i]],
     lag_value = 2
   )
-  make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
-            lambda_i = 1.5, lambda_j = 1.5,
-            alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
-            K = K_scenarios[[i]],
-            process = proc_error[i],
-            lag_value = 2)
-  make_gam(filename)
-  get_lpi(filename)
+  # make_true(n_pairs = pop_pairs, timesteps = steps,
+  #           N0i = 100, N0j = 100,
+  #           lambda_i = 1.5, lambda_j = 1.5,
+  #           alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
+  #           K = K_scenarios[[i]],
+  #           process = proc_error[i],
+  #           lag_value = 2)
+  # make_gam(filename)
+  # get_lpi(filename)
 }
