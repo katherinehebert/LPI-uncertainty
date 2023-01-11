@@ -91,8 +91,11 @@ sim_mech <- function(
   
   # apply observation error on the calculated population sizes
   # pick number of lognormal distribution with a mean of N and an sd of observation error
-  Ni <- apply(Ni, 1:2, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
-  Nj <- apply(Nj, 1:2, function(x) {rlnorm(1, meanlog = log(x), sdlog = observation)})
+  Ni <- apply(Ni, 1:2, function(x) {rnorm(1, mean = x, sd = observation)})
+  Nj <- apply(Nj, 1:2, function(x) {rnorm(1, mean = x, sd = observation)})
+  # change anything below 0 to a 0
+  Ni[which(Ni < 0)] <- 0
+  Nj[which(Nj < 0)] <- 0
   
   # remove extra steps from introduced lag
   timesteps <- timesteps - lag_value
