@@ -13,13 +13,13 @@ theme_set(ggpubr::theme_pubr())
 
 ## COMMON PARAMS ---------------------------------------------------------------
 pop_pairs = 10
-steps = 101
-obs = 5
+steps = 11
+obs = 50
 
 ## CARRYING CAPACITY SCENARIOS -------------------------------------------------
-K_increase = 1000 + 10*c(0:100)
-K_stable = rep(1000, 101)
-K_decline = 1000 - 5*c(0:100)
+K_increase = 1000 + 100*c(0:10)
+K_stable = rep(1000, 11)
+K_decline = 1000 - 50*c(0:10)
 # plot these!
 K_plot <- data.frame(
   time = 1:steps,

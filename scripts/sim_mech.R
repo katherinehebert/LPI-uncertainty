@@ -151,6 +151,8 @@ sim_mech <- function(
   )
   saveRDS(params, paste0("simulations/", simname, "_params.RDS"))
   
+  saveRDS(N, paste0("simulations/", simname, "_l.RDS"))
+  
   if(save_figs == FALSE){ 
     return(N)
   } else {
@@ -160,11 +162,10 @@ sim_mech <- function(
       geom_line(aes(x = time, y = N, group = popID, col = popID)) + 
       facet_wrap(~ set) + 
       theme(legend.position = "none") +
-      scale_x_continuous(breaks = c(1:10)) + 
+      scale_x_continuous(breaks = c(1:timesteps)) + 
       coord_cartesian(ylim = c(0, max(N$N)+10))
     
     # save outputs -----------------------------------------------------------------
-    saveRDS(N, paste0("simulations/", simname, "_l.RDS"))
     ggsave(filename = paste0(simname, "_N.png"), path = "figures/", plot = N_plot,
            width = 7, height = 5, units = "in")
 

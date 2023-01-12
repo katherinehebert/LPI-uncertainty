@@ -45,13 +45,13 @@ lpi_true <- function(scenario_name){
                                        index_vector = index_vector, 
                                        name = paste0(scenario_name, "_true"), 
                                        start_col_name = "X1970", 
-                                       end_col_name = "X2070"
+                                       end_col_name = "X1980"
                                        )
   
   
   # index with 1000 bootstraps (1137 pops) without weightings 
   lpi <- LPIMain(checker_infile_name, 
-                 REF_YEAR = 1970, PLOT_MAX = 2070, 
+                 REF_YEAR = 1970, PLOT_MAX = 1980, 
                  BOOT_STRAP_SIZE = 1000, 
                  use_weightings=0, 
                  VERBOSE=FALSE, save_plots = 0, plot_lpi = 0,
@@ -110,13 +110,13 @@ lpi_calculator <- function(scenario_name){
                                        index_vector = index_vector, 
                                        name = scenario_name, 
                                        start_col_name = "X1970", 
-                                       end_col_name = "X2070"
+                                       end_col_name = "X1980"
   )
   
   
   # index with 1000 bootstraps (1137 pops) without weightings 
   lpi <- LPIMain_custom(checker_infile_name, 
-                        REF_YEAR = 1970, PLOT_MAX = 2070, 
+                        REF_YEAR = 1970, PLOT_MAX = 1980, 
                         BOOT_STRAP_SIZE = 1000, 
                         use_weightings=0, 
                         VERBOSE=FALSE, 
