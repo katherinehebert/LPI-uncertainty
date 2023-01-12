@@ -12,14 +12,14 @@ source('scripts/get_lpi.R')
 theme_set(ggpubr::theme_pubr())
 
 ## COMMON PARAMS ---------------------------------------------------------------
-pop_pairs = 1000
-steps = 11
+pop_pairs = 10
+steps = 101
 obs = 5
 
 ## CARRYING CAPACITY SCENARIOS -------------------------------------------------
-K_increase = 100 + 10*c(0:10)
-K_stable = rep(100, 11)
-K_decline = 100 - 5*c(0:10)
+K_increase = 1000 + 10*c(0:100)
+K_stable = rep(1000, 101)
+K_decline = 1000 - 5*c(0:100)
 # plot these!
 K_plot <- data.frame(
   time = 1:steps,
@@ -34,8 +34,7 @@ ggplot(K_plot) +
   labs(x = "", y = "Carrying capacity (K)", 
        col = "Trend") +
   scale_color_manual(values = ggsci::pal_locuszoom("default")(6)[c(1,5,3)]) +
-  theme(legend.position = "none") +
-  scale_x_continuous(breaks = c(1:10))
+  theme(legend.position = "none") 
 ggsave("figures/carryingcapacity.png", width = 2.63, height = 2.38)
 
 
@@ -66,7 +65,7 @@ for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
   sim_mech(
     n_pairs = pop_pairs, timesteps = steps,
-    N0i = 100, N0j = 100,
+    N0i = 1000, N0j = 1000,
     lambda_i = 1.5, lambda_j = 1.5,
     alpha_ij = 0, alpha_ji = 0,
     process = proc_error[i],
@@ -76,7 +75,7 @@ for(i in 1:length(sim_names)){
     save_figs = FALSE
   )
   make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
+            N0i = 1000, N0j = 1000,
             lambda_i = 1.5, lambda_j = 1.5,
             alpha_ij = 0, alpha_ji = 0,
             process = proc_error[i],
@@ -116,7 +115,7 @@ for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
   sim_mech(
     n_pairs = pop_pairs, timesteps = steps,
-    N0i = 100, N0j = 100,
+    N0i = 1000, N0j = 1000,
     lambda_i = 1.5, lambda_j = 1.5,
     alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
     process = proc_error[i],
@@ -126,7 +125,7 @@ for(i in 1:length(sim_names)){
     save_figs = FALSE
   )
   make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
+            N0i = 1000, N0j = 1000,
             lambda_i = 1.5, lambda_j = 1.5,
             alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
             process = proc_error[i],
@@ -165,7 +164,7 @@ for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
   sim_mech(
     n_pairs = pop_pairs, timesteps = steps,
-    N0i = 100, N0j = 100,
+    N0i = 1000, N0j = 1000,
     lambda_i = 1.5, lambda_j = 1.5,
     alpha_ij = alphas[[i]][1],
     alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
@@ -176,7 +175,7 @@ for(i in 1:length(sim_names)){
     save_figs = FALSE
   )
   make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
+            N0i = 1000, N0j = 1000,
             lambda_i = 1.5, lambda_j = 1.5,
             alpha_ij = alphas[[i]][1],
             alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
@@ -217,7 +216,7 @@ for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
   sim_mech(
     n_pairs = pop_pairs, timesteps = steps,
-    N0i = 100, N0j = 100,
+    N0i = 1000, N0j = 1000,
     lambda_i = 1.5, lambda_j = 1.5,
     alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
     process = proc_error[i], 
@@ -227,7 +226,7 @@ for(i in 1:length(sim_names)){
     save_figs = FALSE
   )
   make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
+            N0i = 1000, N0j = 1000,
             lambda_i = 1.5, lambda_j = 1.5,
             alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
             K = K_scenarios[[i]],
@@ -267,7 +266,7 @@ for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
   sim_mech(
     n_pairs = pop_pairs, timesteps = steps,
-    N0i = 100, N0j = 100,
+    N0i = 1000, N0j = 1000,
     lambda_i = 1.5, lambda_j = 1.5,
     alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
     process = proc_error[i], 
@@ -277,7 +276,7 @@ for(i in 1:length(sim_names)){
     save_figs = FALSE
   )
   make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
+            N0i = 1000, N0j = 1000,
             lambda_i = 1.5, lambda_j = 1.5,
             alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
             process = proc_error[i],
@@ -316,7 +315,7 @@ for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
   sim_mech(
     n_pairs = pop_pairs, timesteps = steps,
-    N0i = 100, N0j = 100,
+    N0i = 1000, N0j = 1000,
     lambda_i = 1.5, lambda_j = 1.5,
     alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
     process = proc_error[i], 
@@ -326,7 +325,7 @@ for(i in 1:length(sim_names)){
     save_figs = FALSE
   )
   make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
+            N0i = 1000, N0j = 1000,
             lambda_i = 1.5, lambda_j = 1.5,
             alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
             K = K_scenarios[[i]],
@@ -366,7 +365,7 @@ for(i in 1:length(sim_names)){
   filename <- sim_names[[i]]
   sim_mech(
     n_pairs = pop_pairs, timesteps = steps,
-    N0i = 100, N0j = 100,
+    N0i = 1000, N0j = 1000,
     lambda_i = 1.5, lambda_j = 1.5,
     alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
     process = proc_error[i], 
@@ -376,7 +375,7 @@ for(i in 1:length(sim_names)){
     save_figs = FALSE 
   )
   make_true(n_pairs = pop_pairs, timesteps = steps,
-            N0i = 100, N0j = 100,
+            N0i = 1000, N0j = 1000,
             lambda_i = 1.5, lambda_j = 1.5,
             alpha_ij = alphas[[i]][1], alpha_ji = alphas[[i]][2], # this is where the covariance is introduced
             K = K_scenarios[[i]],

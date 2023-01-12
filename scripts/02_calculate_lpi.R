@@ -32,8 +32,8 @@ lpi_true <- function(scenario_name){
   simw <- pivot_wider(sim, names_from = time, values_from = N)
   
   # create ID and Binomial columns
-  simw$ID <- 1:2000
-  simw$Binomial <- stringi::stri_rand_strings(2000, 5, "[a-z]")
+  simw$ID <- 1:20
+  simw$Binomial <- stringi::stri_rand_strings(20, 5, "[a-z]")
   
   # Constructing infiles from a populations table
   
@@ -45,13 +45,13 @@ lpi_true <- function(scenario_name){
                                        index_vector = index_vector, 
                                        name = paste0(scenario_name, "_true"), 
                                        start_col_name = "X1970", 
-                                       end_col_name = "X1980"
+                                       end_col_name = "X2070"
                                        )
   
   
   # index with 1000 bootstraps (1137 pops) without weightings 
   lpi <- LPIMain(checker_infile_name, 
-                 REF_YEAR = 1970, PLOT_MAX = 1980, 
+                 REF_YEAR = 1970, PLOT_MAX = 2070, 
                  BOOT_STRAP_SIZE = 1000, 
                  use_weightings=0, 
                  VERBOSE=FALSE, save_plots = 0, plot_lpi = 0,
@@ -97,8 +97,8 @@ lpi_calculator <- function(scenario_name){
   simw <- pivot_wider(sim, names_from = time, values_from = N)
   
   # create ID and Binomial columns
-  simw$ID <- 1:2000
-  simw$Binomial <- stringi::stri_rand_strings(2000, 5, "[a-z]")
+  simw$ID <- 1:20
+  simw$Binomial <- stringi::stri_rand_strings(20, 5, "[a-z]")
   
   # Constructing infiles from a populations table
   
@@ -110,13 +110,13 @@ lpi_calculator <- function(scenario_name){
                                        index_vector = index_vector, 
                                        name = scenario_name, 
                                        start_col_name = "X1970", 
-                                       end_col_name = "X1980"
+                                       end_col_name = "X2070"
   )
   
   
   # index with 1000 bootstraps (1137 pops) without weightings 
   lpi <- LPIMain_custom(checker_infile_name, 
-                        REF_YEAR = 1970, PLOT_MAX = 1980, 
+                        REF_YEAR = 1970, PLOT_MAX = 2070, 
                         BOOT_STRAP_SIZE = 1000, 
                         use_weightings=0, 
                         VERBOSE=FALSE, 
