@@ -15,6 +15,8 @@ for(scenarioID in scenarios){
   ## load simulated populations --------------------------------------------------------
   
   Nraw <- readRDS(paste0("simulations/scenario", scenarioID, "_l.RDS"))
+  # add 1 to any extinctions to avoid dividing by 0
+  if(!is.null(length(which(Nraw$N == 0)))){Nraw$N[which(Nraw$N == 0)] = 1}
   Nparams <- readRDS(paste0("simulations/scenario", scenarioID, "_params.RDS"))
   
   # get sigmas
