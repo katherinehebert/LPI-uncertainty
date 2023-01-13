@@ -15,6 +15,8 @@ for(scenarioID in scenarios){
   ## load simulated populations --------------------------------------------------------
   
   Nraw <- readRDS(paste0("simulations/scenario", scenarioID, "_l.RDS"))
+  # if there are N = 0, add 1 individual to avoid divisions by 0
+  if(length(which(Nraw$N == 0)) > 0){Nraw$N[which(Nraw$N == 0)] <- 1}
   Nparams <- readRDS(paste0("simulations/scenario", scenarioID, "_params.RDS"))
   
   # get sigmas
@@ -41,8 +43,8 @@ for(scenarioID in scenarios){
     return(d)
   }
   
-  dt <- cbind(apply(N[1:10,], 1, eq2, sigma_measure = sigma_m$i),
-              apply(N[11:20,], 1, eq2, sigma_measure = sigma_m$j))
+  dt <- cbind(apply(N[1:1000,], 1, eq2, sigma_measure = sigma_m$i),
+              apply(N[1001:2000,], 1, eq2, sigma_measure = sigma_m$j))
   
   
   # equation 2
@@ -68,8 +70,8 @@ for(scenarioID in scenarios){
     }
     return(eq2var)
   }
-  varonly <- cbind(apply(N[1:10,], 1, eq2_varonly, sigma_measure = sigma_m$i),
-                  apply(N[11:20,], 1, eq2_varonly, sigma_measure = sigma_m$j))
+  varonly <- cbind(apply(N[1:1000,], 1, eq2_varonly, sigma_measure = sigma_m$i),
+                  apply(N[1001:2000,], 1, eq2_varonly, sigma_measure = sigma_m$j))
   
   # par(mfrow = c(2,2))
   # matplot(t(N), type = "l", main = "Population size", col = PNWColors::pnw_palette("Sunset2", 5), lty= 1)
@@ -87,8 +89,8 @@ for(scenarioID in scenarios){
     }
     return(eq3var)
   }
-  var_dt <- cbind(apply(N[1:10,], 1, eq3, sigma_measure = sigma_m$i, sigma_process = sigma_p$i),
-                   apply(N[11:20,], 1, eq3, sigma_measure = sigma_m$j, sigma_process = sigma_p$j))
+  var_dt <- cbind(apply(N[1:1000,], 1, eq3, sigma_measure = sigma_m$i, sigma_process = sigma_p$i),
+                   apply(N[1001:2000,], 1, eq3, sigma_measure = sigma_m$j, sigma_process = sigma_p$j))
   
   # par(mfrow = c(1,3))
   # matplot(t(N), type = "l", main = "Population size", col = PNWColors::pnw_palette("Sunset2", 5), lty= 1)

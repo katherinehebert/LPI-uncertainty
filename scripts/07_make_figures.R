@@ -234,8 +234,8 @@ facet_names <- c(
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line(),
           legend.position = "none",
-          panel.spacing.x = unit(4, "mm")) +
-    coord_cartesian(ylim = c(0, 0.5)))
+          panel.spacing.x = unit(4, "mm"))) #+
+    #coord_cartesian(ylim = c(0, 0.5)))
 (FIG3_A / FIG3_B + plot_annotation(tag_levels = "a")) 
 ggsave("figures/fig3_uncertainty.png", width = 10.9, height = 7.7)
 
@@ -311,7 +311,7 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+#,
     #legend.position = "none") +
-    coord_cartesian(ylim = c(-0.6, 0.1)) +
+    #coord_cartesian(ylim = c(-0.6, 0.1)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG5_D <- ggline(df, 
                   "Lag", 
@@ -404,7 +404,7 @@ ggsave("figures/figSX_lag_percentile.png", width = 8.56, height = 8)
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+
-    coord_cartesian(ylim = c(-0.6, 0.1)) +
+    #coord_cartesian(ylim = c(-0.6, 0.1)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
 
