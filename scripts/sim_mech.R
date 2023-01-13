@@ -15,7 +15,7 @@ sim_mech <- function(
   save_figs = TRUE){
   
   # set seed for randomisations
-  set.seed(2)
+  set.seed(120)
   
   ## arguments: ## ----
   

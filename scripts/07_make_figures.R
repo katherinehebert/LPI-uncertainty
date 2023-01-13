@@ -235,7 +235,7 @@ facet_names <- c(
           panel.grid.major.y = element_line(),
           legend.position = "none",
           panel.spacing.x = unit(4, "mm")) +
-    coord_cartesian(ylim = c(0, 0.5)))
+    coord_cartesian(ylim = c(0, 0.1)))
 (FIG3_A / FIG3_B + plot_annotation(tag_levels = "a")) 
 ggsave("figures/fig3_uncertainty.png", width = 10.9, height = 7.7)
 

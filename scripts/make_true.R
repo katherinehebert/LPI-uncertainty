@@ -26,7 +26,7 @@ make_true <- function(
   simname = filename){
   
   # set seed for randomisations
-  set.seed(2)
+  set.seed(120)
   
   ## arguments: ## ----
   
