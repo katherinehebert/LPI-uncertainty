@@ -161,6 +161,7 @@ sim_mech <- function(
                                lag_value)
   )
   saveRDS(params, paste0("simulations/", simname, "_params.RDS"))
+  saveRDS(N, paste0("simulations/", simname, "_l.RDS"))
   
   if(save_figs == FALSE){ 
     return(N)
@@ -175,7 +176,6 @@ sim_mech <- function(
       coord_cartesian(ylim = c(0, max(N$N)+10))
     
     # save outputs -----------------------------------------------------------------
-    saveRDS(N, paste0("simulations/", simname, "_l.RDS"))
     ggsave(filename = paste0(simname, "_N.png"), path = "figures/", plot = N_plot,
            width = 7, height = 5, units = "in")
 
