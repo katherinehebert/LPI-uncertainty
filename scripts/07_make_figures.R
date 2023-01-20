@@ -182,7 +182,7 @@ ggsave("figures/fig2_accuracy.png", width = 12.4, height = 5.14)
 ## FIG 3: Uncertainty (propagated) ----
 
 df <- dplyr::filter(df0, Lag == 0)
-
+df <- df[-which(df$scenario == "scenario3P" & df$time %in% c(10,11)),] 
 facet_names <- c(
   `0` = "Process ε = 0",
   `0.1` = "Process ε = 0.1",
@@ -221,7 +221,7 @@ facet_names <- c(
                 color = "direction", 
                 point.size = 2, size = .5,
                 facet.by = "Process_error",
-                add = c("mean_sd")) +
+                add = c("mean")) +
     facet_wrap(~Process_error, dir = "h", labeller = as_labeller(facet_names)) + #+
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
