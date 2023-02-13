@@ -65,8 +65,6 @@ for(scenarioID in scenarios){
     eq2var <- c()
     for(t in 2:length(N)){
       eq2var[t] <- (sigma_measure^2)/(2*((N[t-1])^2 - (N[t])^2))
-      # should the population sizes be logged here?
-      #eq2var[t] <- (sigma_measure^2)/(2*(log(N[t-1])^2 - log(N[t])^2))
     }
     return(eq2var)
   }
@@ -115,7 +113,7 @@ for(scenarioID in scenarios){
   dt_cov <- cov(dt, use = "pairwise.complete.obs")
   dt_cov <- dt_cov[which(lower.tri(dt_cov))]
   
-  var_dtbar = (1/nrow(N))*(apply(var_dt, 1, sum) + 2*sum(dt_cov)) # FLAG ---- 
+  var_dtbar = (1/nrow(N))*(apply(var_dt, 1, sum) + 2*sum(dt_cov) 
   
   #plot(var_dtbar, type = "l")
   
