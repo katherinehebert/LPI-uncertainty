@@ -82,6 +82,7 @@ ONE_B <- ggplot(df,
     format_lpiplots +
   scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
+  coord_cartesian(ylim = c(0, 2.5)) +
   labs(x = "Time", col = "Trend", fill = "Trend") +
   facet_wrap(~interaction, nrow = 5) +
   theme(legend.position = "right",
@@ -102,25 +103,6 @@ ONE_C <- ggplot(df,
 # put together and save
 (ONE_A + ONE_B + plot_annotation(tag_levels = 'a') )
 ggsave("figures/fig1_trendoverview.png", height = 7, width = 6)
-
-# plot the simulated population trends
-ggplot(scenarios, 
-                aes(x = time, col = direction, group = interaction(popID, scenario))) +
-  geom_line(aes(y = N), lwd = .2) +
-  labs(x = "", y = "Abundance (N)") + 
-  scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)) +
-  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-  facet_wrap(~interaction, ncol = 5) +
-  theme(legend.position = "none",
-        strip.text = element_text(face = "bold"))
-ggsave("figures/presentation_trendoverview.png", width = 8.89, height = 2.2)
-
-# ggplot(dplyr::filter(scenarios, scenario == "scenario1C"),
-#        aes(x = time, col = popID)) +
-#   geom_line(aes(y = N), lwd = .2) +
-#   ggpubr::theme_transparent() +
-#   theme(legend.position = "none")
-# ggsave("figures/presentation_titleslide.png", width = 13.4, height = 5.45)
 
 
 #### remove time = 1 ----
@@ -311,7 +293,7 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+#,
     #legend.position = "none") +
-    coord_cartesian(ylim = c(-0.6, 0.1)) +
+    coord_cartesian(ylim = c(-0.1, 0.1)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG5_D <- ggline(df, 
                   "Lag", 

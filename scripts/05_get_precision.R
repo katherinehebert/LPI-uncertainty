@@ -62,25 +62,25 @@ compare_precision <- function(simID){
   dt_compare_w <- inner_join(bootstrap, chain, by = "year") 
   dt_compare <- pivot_longer(dt_compare_w, cols = c(bootstrap, chain), names_to = "type", values_to = "lpi")
   
-  # per year #### IMPORTANT ONE #######
-  ggplot(dt_compare, aes(y = year, x = lpi, lty = type, fill = factor(stat(quantile, na.rm = TRUE)))) +
-    stat_density_ridges(geom = "density_ridges_gradient", 
-                        alpha = .7, lwd = 0, 
-                        calc_ecdf = TRUE,
-                        quantiles = c(0.025, 0.975),
-                        scale = .9) +
-    stat_density_ridges(aes(fill = NA), alpha = 0, lwd = .3, quantiles = c(.5), quantile_lines = TRUE,
-                        scale = .9) +
-    scale_fill_manual(
-      name = "Probability", values = c("#FF0000A0", "#A0A0A0A0", "#0000FFA0"),
-      labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]")
-    ) + 
-    scale_linetype_manual(values = c(1, 5),
-                          name = "", 
-                          labels = c("smoothed LPI", "raw LPI")
-    ) + 
-    labs(x = "LPI values", y = "Year", fill = "", title = paste0("Scenario ", simID))
-  ggsave(paste0("figures/scenario", simID, "_precisiondensity.png"), width = 8.6, height = 7)
+  # # per year #### IMPORTANT ONE #######
+  # ggplot(dt_compare, aes(y = year, x = lpi, lty = type, fill = factor(stat(quantile, na.rm = TRUE)))) +
+  #   stat_density_ridges(geom = "density_ridges_gradient", 
+  #                       alpha = .7, lwd = 0, 
+  #                       calc_ecdf = TRUE,
+  #                       quantiles = c(0.025, 0.975),
+  #                       scale = .9) +
+  #   stat_density_ridges(aes(fill = NA), alpha = 0, lwd = .3, quantiles = c(.5), quantile_lines = TRUE,
+  #                       scale = .9) +
+  #   scale_fill_manual(
+  #     name = "Probability", values = c("#FF0000A0", "#A0A0A0A0", "#0000FFA0"),
+  #     labels = c("(0, 0.025]", "(0.025, 0.975]", "(0.975, 1]")
+  #   ) + 
+  #   scale_linetype_manual(values = c(1, 5),
+  #                         name = "", 
+  #                         labels = c("smoothed LPI", "raw LPI")
+  #   ) + 
+  #   labs(x = "LPI values", y = "Year", fill = "", title = paste0("Scenario ", simID))
+  # ggsave(paste0("figures/scenario", simID, "_precisiondensity.png"), width = 8.6, height = 7)
   
   
   # initialise a data frame to store results
