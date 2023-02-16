@@ -9,15 +9,12 @@
 # filename = "test"
 # n_pairs = 10 
 # timesteps = 10
-# N0i = 100
-# N0j = 100 
 # lambda_i = 1.5
 # lambda_j = 1.5
 
 make_true <- function(
   n_pairs = 10, 
   timesteps = 11, 
-  N0i = 100, N0j = 100, 
   lambda_i = 1.5, lambda_j = 1.5, 
   alpha_ij, alpha_ji,
   process,
@@ -42,6 +39,20 @@ make_true <- function(
   
   # add more time steps to allow lag
   timesteps = timesteps + lag_value
+  
+  # calculate initial population size as the equilibrium population size -------
+  
+  # calculate starting population size at equilibrium
+  get_equilibrium = function(K0, alpha_1, alpha_2){
+    N_eq = (K0 - alpha_1 * K0)/(1 - alpha_2 * alpha_1)
+    return(N_eq)
+  }
+  N0i = get_equilibrium(K0 = K[1],
+                        alpha_1 = alpha_ij,
+                        alpha_2 = alpha_ji) %>% ceiling()
+  N0j = get_equilibrium(K0 = K[1],
+                        alpha_1 = alpha_ji,
+                        alpha_2 = alpha_ij) %>% ceiling()
   
   # run simulation --------------------------------------------------------------- 
   

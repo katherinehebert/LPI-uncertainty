@@ -71,7 +71,8 @@ ONE_A <- ggplot(scenarios,
   scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   facet_wrap(~interaction, nrow = 5) +
   theme(legend.position = "none",
-        strip.text = element_text(face = "bold"))
+        strip.text = element_text(face = "bold")) +
+  coord_cartesian(ylim = c(0, 275))
 # plot the corresponding lpi trends
 ONE_B <- ggplot(df, 
        aes(x = time, col = direction, group = scenario)) +
@@ -87,17 +88,23 @@ ONE_B <- ggplot(df,
   theme(legend.position = "right",
         strip.text = element_text(face = "bold"))
 
-ONE_C <- ggplot(df, 
+# 1A-C, 2A-C, 3A-C
+df <- dplyr::filter(df0, Process_error == "0.2" & Lag == "0")
+
+# plot the corresponding lpi trends
+(ONE_C <- ggplot(df, 
                 aes(x = time, col = direction, group = scenario)) +
-  geom_line(aes(y = lpi_correction), lty = 2, lwd = .2) +
-  geom_line(aes(y = lpi_nocorrection)) +
+  geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
+                  fill = direction), alpha = .3, lwd = 0) +
+  geom_line(aes(y = LPI_final_true), lty = 2, lwd = .2) +
+  geom_line(aes(y = LPI_final)) +
   format_lpiplots +
   scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-  labs(col = "Trend", fill = "Trend") +
-  facet_wrap(~interaction, ncol = 5) +
-  theme(legend.position = "none",
-        strip.text = element_text(face = "bold"))
+  labs(x = "Time", col = "Trend", fill = "Trend") +
+  facet_wrap(~interaction, nrow = 5) +
+  theme(legend.position = "right",
+        strip.text = element_text(face = "bold")))
 
 # put together and save
 (ONE_A + ONE_B + plot_annotation(tag_levels = 'a') )
@@ -149,7 +156,7 @@ df <- dplyr::filter(df0, Lag == 0, Process_error == 0)
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line(),
           legend.position = "none") +
-    coord_cartesian(ylim = c(-0.08, 0.08)) +
+    coord_cartesian(ylim = c(-0.051, 0.051)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG2_B <- ggline(df, 
                   "interaction", 
