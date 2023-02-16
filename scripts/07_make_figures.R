@@ -101,7 +101,7 @@ df <- dplyr::filter(df0, Process_error == "0.2" & Lag == "0")
   format_lpiplots +
   scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-  labs(x = "Time", col = "Trend", fill = "Trend") +
+  labs(x = "Time", col = "Trend", fill = "Trend", title = "Process error = 0.2") +
   facet_wrap(~interaction, nrow = 5) +
   theme(legend.position = "right",
         strip.text = element_text(face = "bold")))
@@ -244,6 +244,8 @@ facet_names <- c(
           panel.spacing.x = unit(4, "mm")))
 (FIG3_A / FIG3_B + plot_annotation(tag_levels = "a")) 
 ggsave("figures/fig3_uncertainty.png", width = 10.9, height = 7.7)
+
+
 
 
 ## SUPPLEMENTARY FIGURES ####
