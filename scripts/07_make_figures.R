@@ -46,7 +46,7 @@ format_lpiplots <- list(
   theme(legend.position = "none"),
   labs(x = "", y = "LPI"),
   scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)),
-  ylim(c(0.5, 2)))
+  ylim(c(0.3, 2.3)))
 
 ## FIG 1: Overview of the scenario trends ----
 
@@ -149,7 +149,7 @@ df <- dplyr::filter(df0, Lag == 0, Process_error == 0)
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line(),
           legend.position = "none") +
-    coord_cartesian(ylim = c(-0.05, 0.05)) +
+    coord_cartesian(ylim = c(-0.08, 0.08)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG2_B <- ggline(df, 
                   "interaction", 
@@ -310,7 +310,7 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+#,
     #legend.position = "none") +
-    coord_cartesian(ylim = c(-0.6, 0.1)) +
+    coord_cartesian(ylim = c(-0.1, 0.1)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG5_D <- ggline(df, 
                   "Lag", 
@@ -403,7 +403,7 @@ ggsave("figures/figSX_lag_percentile.png", width = 8.56, height = 8)
           axis.title = element_text(size = 14),
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+
-    coord_cartesian(ylim = c(-0.6, 0.1)) +
+    coord_cartesian(ylim = c(-0.5, 0.1)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 ggsave("figures/figSX_lag_uncertaintybias.png", width = 8.56, height = 8)
 
