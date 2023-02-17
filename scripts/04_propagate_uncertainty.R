@@ -113,7 +113,7 @@ for(scenarioID in scenarios){
   dt_cov <- cov(dt, use = "pairwise.complete.obs")
   dt_cov <- dt_cov[which(lower.tri(dt_cov))]
   
-  var_dtbar = (1/nrow(N))*(apply(var_dt, 1, sum) + 2*sum(dt_cov) 
+  var_dtbar = (1/nrow(N))*(apply(var_dt, 1, sum) + 2*sum(dt_cov)) 
   
   #plot(var_dtbar, type = "l")
   
