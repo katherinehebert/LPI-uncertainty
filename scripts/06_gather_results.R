@@ -39,8 +39,19 @@ names(precision) <- gsub("_precision.RDS", "", temp)
 # and bind into one data frame
 precision <- dplyr::bind_rows(precision, .id = "scenario")
 precision$time <- as.numeric(precision$time) - 1969
+
 # join to results dataframe
 rLpi = left_join(rLpi, precision)
+
+temp = list.files(path = "outputs/", pattern = "_precision2.RDS")
+precision2 <- lapply(paste0("outputs/", temp), readRDS)
+names(precision2) <- gsub("_precision2.RDS", "", temp)
+# and bind into one data frame
+precision2 <- dplyr::bind_rows(precision2, .id = "scenario")
+precision2$time <- as.numeric(precision2$time)
+
+# join to results dataframe
+rLpi = left_join(rLpi, precision2)
 
 ## PARAMS ##
 
@@ -68,21 +79,14 @@ params$Lag[which(params$scenario %like% 'scenario6|scenario7')] <- "2"
 # join all tables together
 df <- dplyr::left_join(rLpi, K_scenarios) %>% dplyr::left_join(params)
 
-# accuracy ----
-
-# calculate LPI accuracy 
-df$accuracy <- df$LPI_final - df$LPI_final_true
-
 # precision ----
-
-# calculated in temporary.R
 
 # format df columns for plotting
 df$Lag <- factor(df$Lag, levels = c("0", "1", "2"))
 df$direction <- factor(df$direction, levels = c("decline", "stable", "growth"))
-colnames(df)[35] <- "N0"
-colnames(df)[36] <- "lambda"
-colnames(df)[37] <- "interaction"
+colnames(df)[23] <- "N0"
+colnames(df)[24] <- "lambda"
+colnames(df)[25] <- "interaction"
 
 # save to file
 saveRDS(df, "outputs/all_results.RDS")

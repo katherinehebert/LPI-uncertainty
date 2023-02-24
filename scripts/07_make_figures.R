@@ -11,9 +11,9 @@ library(ggsci)
 ## PREPARE DATA ----
 
 # load results
-df1 <- readRDS("~/Documents/GitHub/LPI-sensitivity/outputs/all_results.RDS")
-df2 <- readRDS("outputs/all_uncertaintypropagation.RDS")
-df0 <- left_join(df1, df2, by = c("scenario", "time"))
+df0 <- readRDS("~/Documents/GitHub/LPI-sensitivity/outputs/all_results.RDS")
+# df2 <- readRDS("outputs/all_uncertaintypropagation.RDS")
+# df0 <- left_join(df1, df2, by = c("scenario", "time"))
 
 # set factor levels for plotting
 df0$Process_error <- factor(df0$Process_error, levels = c("0", "0.1", "0.2"))
@@ -34,6 +34,17 @@ colours <- c("Strong Asynchrony" = "#e66101",
              "Strong Synchrony" = "#5e3c99")
 #   scale_color_viridis_d(begin = .3, end = .7, option = "A") 
 
+facet_names <- c(
+  `0` = "Process ε = 0",
+  `0.1` = "Process ε = 0.1",
+  `0.2` = "Process ε = 0.2",
+  `Strong Asynchrony` = "Strong Asynchrony", 
+  `Weak Asynchrony` = "Weak Asynchrony", 
+  `No Synchrony` = "No Synchrony",
+  `Weak Synchrony`= "Weak Synchrony", 
+  `Strong Synchrony` = "Strong Synchrony"
+)
+
 # colour palette for process error plots
 pal_lags <- rev(c("#22A884FF", "#2A788EFF", "#414487FF"))
 pal_error <- c("#08306b", "#2171b5", "#6baed6")
@@ -45,13 +56,14 @@ theme_set(ggpubr::theme_pubr())
 format_lpiplots <- list(
   theme(legend.position = "none"),
   labs(x = "", y = "LPI"),
-  scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)),
+  scale_x_continuous(breaks = seq(from = 0, to = 10, by = 2)),
   ylim(c(0.3, 2.3)))
 
 ## FIG 1: Overview of the scenario trends ----
 
 # 1A-C, 2A-C, 3A-C
-df <- dplyr::filter(df0, Process_error == "0" & Lag == "0")
+df <- dplyr::filter(df0, Process_error == "0.1" & Lag == "0")
+df$lpi_variance[which(df$time == 1)] = 0
 
 # load simulated populations
 scenarios <- lapply(unique(df$scenario),
@@ -63,189 +75,210 @@ scenarios <- left_join(scenarios,
 scenarios$dt_chain[which(scenarios$time == 1)] <- 0
 
 # plot the simulated population trends
+
 ONE_A <- ggplot(scenarios, 
-       aes(x = time, col = direction, group = interaction(popID, scenario))) +
-  geom_line(aes(y = N), lwd = .2) +
+       aes(x = time-1, col = direction, group = interaction(popID, scenario))) +
+  geom_line(aes(y = N), lwd = .3) +
   labs(x = "Time", y = "Abundance (N)", col = "Trend") + 
-  scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)) +
-  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-  facet_wrap(~interaction, nrow = 5) +
-  theme(legend.position = "none",
-        strip.text = element_text(face = "bold")) +
-  coord_cartesian(ylim = c(0, 275))
-# plot the corresponding lpi trends
-ONE_B <- ggplot(df, 
-       aes(x = time, col = direction, group = scenario)) +
-    geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
-                    fill = direction), alpha = .3, lwd = 0) +
-    geom_line(aes(y = LPI_final_true), lty = 2, lwd = .2) +
-    geom_line(aes(y = LPI_final)) +
-    format_lpiplots +
-  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-  scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-  labs(x = "Time", col = "Trend", fill = "Trend") +
-  facet_wrap(~interaction, nrow = 5) +
-  theme(legend.position = "right",
-        strip.text = element_text(face = "bold"))
-
-# 1A-C, 2A-C, 3A-C
-df <- dplyr::filter(df0, Process_error == "0.2" & Lag == "0")
-
-# plot the corresponding lpi trends
-(ONE_C <- ggplot(df, 
-                aes(x = time, col = direction, group = scenario)) +
-  geom_ribbon(aes(ymin = CI_low, ymax = CI_high, 
-                  fill = direction), alpha = .3, lwd = 0) +
-  geom_line(aes(y = LPI_final_true), lty = 2, lwd = .2) +
-  geom_line(aes(y = LPI_final)) +
-  format_lpiplots +
-  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-  scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-  labs(x = "Time", col = "Trend", fill = "Trend", title = "Process error = 0.2") +
-  facet_wrap(~interaction, nrow = 5) +
-  theme(legend.position = "right",
-        strip.text = element_text(face = "bold")))
-
-# put together and save
-(ONE_A + ONE_B + plot_annotation(tag_levels = 'a') )
-ggsave("figures/fig1_trendoverview.png", height = 7, width = 6)
-
-# plot the simulated population trends
-ggplot(scenarios, 
-                aes(x = time, col = direction, group = interaction(popID, scenario))) +
-  geom_line(aes(y = N), lwd = .2) +
-  labs(x = "", y = "Abundance (N)") + 
-  scale_x_continuous(breaks = seq(from = 0, to = 11, by = 2)) +
+  scale_x_continuous(breaks = seq(from = 0, to = 10, by = 2)) +
   scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
   facet_wrap(~interaction, ncol = 5) +
-  theme(legend.position = "none",
-        strip.text = element_text(face = "bold"))
-ggsave("figures/presentation_trendoverview.png", width = 8.89, height = 2.2)
+  theme(legend.position = "top",
+        axis.text.x = element_text(size = 11),
+        axis.title = element_text(size = 14),
+        strip.text = element_text(size = 12),
+        panel.grid.major.y = element_line(),
+        panel.spacing.x = unit(4, "mm")) +
+  coord_cartesian(ylim = c(0, 275))
 
-# ggplot(dplyr::filter(scenarios, scenario == "scenario1C"),
-#        aes(x = time, col = popID)) +
-#   geom_line(aes(y = N), lwd = .2) +
-#   ggpubr::theme_transparent() +
-#   theme(legend.position = "none")
-# ggsave("figures/presentation_titleslide.png", width = 13.4, height = 5.45)
+(ONE_B <- ggplot(df, 
+                 aes(x = time-1, col = direction, group = scenario)) +
+    geom_ribbon(aes(ymin = CI_low, 
+                    ymax = CI_high, 
+                    fill = direction), 
+                alpha = .9, lwd = 0) +
+    geom_ribbon(aes(ymin = lpi_correction - 1.96*sqrt(lpi_variance), 
+                    ymax = lpi_correction + 1.96*sqrt(lpi_variance), 
+                    col = direction, 
+                    fill = direction), 
+                alpha = .3, lwd = .1) +
+    geom_line(aes(y = LPI_final, lty = "Original"), col = "black", lwd = .4) +
+    geom_line(aes(y = lpi_correction, lty = "Corrected"), col = "black", lwd = .4) +
+    format_lpiplots +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
+    scale_fill_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
+    scale_linetype_manual(values = c("Original" = 2, "Corrected" = 1)) +
+    labs(x = "Time", col = "Trend", fill = "Trend", linetype = "LPI") +
+    facet_wrap(~interaction, ncol = 5) +
+    theme(legend.position = "top",
+          axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 12),
+          panel.grid.major.y = element_line(),
+          panel.spacing.x = unit(4, "mm"))
+  )
 
+# put together and save
+(ONE_A / ONE_B + plot_annotation(tag_levels = 'a'))
+ggsave("figures/fig1_trendoverview.png", width = 9, height = 8)
 
 #### remove time = 1 ----
 # bc it is just the baseline
 
 df0 <- dplyr::filter(df0, time != 1)
 
+## FIG 2 & 3 : Accuracy of the trend and the uncertainty interval ----
 
-## FIG 2: Accuracy of the trends ----
+df <- dplyr::filter(df0, Lag == 0)
 
-df <- dplyr::filter(df0, Lag == 0, Process_error == 0)
-
-(FIG2_A <- ggline(df, 
-                  "interaction", 
-                  "accuracy",
-                  color = "direction", 
-                  point.size = 2, size = .5,
+(FIG2_A <- ggline(df,
+                  "Process_error",
+                  "percentile_LPIcorrected",
+                  facet.by = "interaction",
+                  color = "direction",
+                  point.size = 2, size = .5, 
                   add = c("mean_sd")) +
-    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-    labs(color = "Trend",
-         x = " ", 
-         y = "Bias from the expected LPI") +
-    scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
-    theme(axis.text.x = element_text(size = 11),
-          axis.title = element_text(size = 14),
-          strip.text = element_text(size = 14),
-          panel.grid.major.y = element_line(),
-          legend.position = "none") +
-    coord_cartesian(ylim = c(-0.051, 0.051)) +
-    geom_hline(yintercept = 0, lwd = .2, lty = 2))
-(FIG2_B <- ggline(df, 
-                  "interaction", 
-                  "percentile",
-                  color = "direction", 
-                  point.size = 2, size = .5,
-                  add = c("mean_sd")) +
+    facet_wrap(~interaction, ncol = 5, labeller = as_labeller(facet_names)) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     geom_hline(aes(yintercept = 0.025), lty = 4, alpha = .4) +
     geom_hline(aes(yintercept = 0.5), lty = 2, alpha = .4) +
     geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
-    labs(y = "Percentile of the expected LPI", #expression(mu~Percentile), 
-         x = "", 
-         col = "Trend", 
+    labs(y = "Percentile of the corrected LPI \nin the original CI", #expression(mu~Percentile),
+         x = "",
+         col = "Trend",
          fill = "Trend") +
-    scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
-          strip.text = element_text(size = 14),
-          legend.position = "bottom") +
+          strip.text = element_text(size = 12),
+          legend.position = "none") +
     coord_cartesian(ylim = c(-0.1,1.1)) +
     scale_y_continuous(breaks = c(0.025, 0.5, 0.975)))
-FIG2_leg <- ggpubr::get_legend(FIG2_B) %>% as_ggplot()
-((FIG2_leg / (FIG2_A + (FIG2_B + theme(legend.position = "none")))) + 
-    plot_annotation(tag_levels = "a")) +
-  plot_layout(height = c(1,5))
-ggsave("figures/fig2_accuracy.png", width = 12.4, height = 5.14)
 
-
-## FIG 3: Uncertainty (propagated) ----
-
-df <- dplyr::filter(df0, Lag == 0)
-
-facet_names <- c(
-  `0` = "Process ε = 0",
-  `0.1` = "Process ε = 0.1",
-  `0.2` = "Process ε = 0.2",
-  `Strong Asynchrony` = "Strong Asynchrony", 
-  `Weak Asynchrony` = "Weak Asynchrony", 
-  `Weak Synchrony`= "Weak Synchrony", 
-  `Strong Synchrony` = "Strong Synchrony"
-)
+(FIG2_B <- ggline(df,
+                  "Process_error",
+                  "CI_width_reldiff",
+                  facet.by = "interaction",
+                  color = "direction",
+                  point.size = 2, size = .5,
+                  add = c("mean_sd")) +
+    facet_wrap(~interaction, ncol = 5, labeller = as_labeller(facet_names)) +
+    scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
+    labs(color = "Trend",
+         x = " ",
+         y = "Unrepresented uncertainty") +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 12),
+          panel.grid.major.y = element_line(),
+          legend.position = "none"))
 
 (FIG3_A <- ggline(df, 
-               "interaction", 
-               "lpi_bias",
-               color = "direction", 
-               point.size = 2, size = .5,
-               facet.by = "Process_error",
-               add = c("mean_sd")) +
-  facet_wrap(~Process_error, dir = "h", labeller = as_labeller(facet_names)) + 
+                  "Process_error", 
+                  "lpi_bias",
+                  color = "direction", 
+                  point.size = 2, size = .5,
+                  facet.by = "interaction",
+                  add = c("mean_sd")) +
+    facet_wrap(~interaction, dir = "h", ncol = 5) + 
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
-  labs(color = "Trend",
-       x = " ", 
-       y = "Uncertainty bias of the LPI") +
-  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10),
-                   breaks = function(x){x[c(TRUE, FALSE)]}) +
-  theme(axis.text.x = element_text(size = 11),
-        axis.title = element_text(size = 14),
-        strip.text = element_text(size = 14),
-        panel.grid.major.y = element_line(),
-        legend.position = "top",
-        panel.spacing.x = unit(4, "mm")) +
-  #coord_cartesian(ylim = c(-0.3, 0.1)) +
-  geom_hline(yintercept = 0, lwd = .2, lty = 2))
+    labs(color = "Trend",
+         x = " ", 
+         y = "Uncertainty bias of the LPI") +
+    theme(axis.text.x = element_text(size = 11),
+          axis.title = element_text(size = 14),
+          strip.text = element_text(size = 12),
+          panel.grid.minor.y = element_line(linewidth = .2),
+          panel.grid.major.y = element_line(),
+          legend.position = "top",
+          panel.spacing.x = unit(4, "mm")) +
+    geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG3_B <- ggline(df, 
-                "interaction", 
-                "lpi_variance",
-                color = "direction", 
-                point.size = 2, size = .5,
-                facet.by = "Process_error",
-                add = c("mean_sd")) +
-    facet_wrap(~Process_error, dir = "h", labeller = as_labeller(facet_names)) + #+
+                  "Process_error", 
+                  "lpi_variance",
+                  color = "direction", 
+                  point.size = 2, size = .5,
+                  facet.by = "interaction",
+                  add = c("mean_sd")) +
+    facet_wrap(~interaction, dir = "h", nrow = 1) + #+
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
          x = " ", 
          y = "Variance of the LPI") +
-    scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10),
-                     breaks = function(x){x[c(TRUE, FALSE)]}) +
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
-          strip.text = element_text(size = 14),
+          strip.text = element_text(size = 12),
           panel.grid.major.y = element_line(),
-          legend.position = "none",
+          panel.grid.minor.y = element_line(linewidth = .2),
+          legend.position = "top",
           panel.spacing.x = unit(4, "mm")))
-(FIG3_A / FIG3_B + plot_annotation(tag_levels = "a")) 
-ggsave("figures/fig3_uncertainty.png", width = 10.9, height = 7.7)
+
+(FIG3_A / FIG2_A + plot_annotation(tag_levels = "a"))
+ggsave("figures/fig2_accuracy.png", width = 9, height = 8)
+
+(FIG3_B / FIG2_B + plot_annotation(tag_levels = "a")) 
+ggsave("figures/fig3_uncertainty.png", width = 9, height = 8)
+
+## FIG 4: Demonstration of uncertainty of population trends vs. pop size ----
+
+# equation 2 ----
+# expectation of the growth rate trend
+eq2 <- function(N, sigma_measure = 0){
+  d <- c()
+  for(t in 2:length(N)){
+    d[t] <- log10(N[t]/N[t-1]) + (sigma_measure^2)/(2*(N[t-1]^2 - N[t]^2))
+  }
+  return(d)
+}
+
+# equation 2
+# just the growth rate part
+eq2_donly <- function(N){
+  eq2dt <- c()
+  for(t in 2:length(N)){
+    eq2dt[t] <- log10(N[t]/N[t-1])
+  }
+  return(eq2dt)
+}
+
+eq2_varonly <- function(N, sigma_measure = 0){
+  eq2var <- c()
+  for(t in 2:length(N)){
+    eq2var[t] <- (sigma_measure^2)/(2*((N[t-1])^2 - (N[t])^2))
+  }
+  return(eq2var)
+}
+
+N = 2:200
+N2 = N-1
+NN = cbind(N, N2)
+correction <- apply(NN, 1, eq2_varonly, sigma_measure = 5)[2,]
+NNC = data.frame(
+  "N0" = N,
+  "N1" = N2,
+  "correction" = correction,
+  "Trend" = "Decline ( N - 1 )"
+)
+
+Nd2 = N+1
+NNd = cbind(N, Nd2)
+correction <- apply(NNd, 1, eq2_varonly, sigma_measure = 5)[2,]
+NNCd = data.frame(
+  "N0" = N,
+  "N1" = Nd2,
+  "correction" = correction,
+  "Trend" = "Growth ( N + 1 )"
+)
+NNC = rbind(NNC, NNCd) %>% as.data.frame()
 
 
+ggplot(data = NNC) +
+  geom_line(aes(x = N0, y = correction, col = Trend), lwd = .8) +
+  scale_color_manual(values = pal_locuszoom("default")(6)[c(1,3)]) +
+  geom_hline(yintercept = 0, lwd = .2, lty = 2) +
+  labs(y = expression(Measurement~uncertainty~correction~to~"E["~d[t]~"]"), 
+       x = "Population abundance (N)") +
+  theme_pubr()
+ggsave("figures/fig4_demo_eq2.png", width = 5.5, height = 4.5)
 
 
 ## SUPPLEMENTARY FIGURES ####
@@ -257,7 +290,7 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
 
 (FIG4_A <- ggline(df, 
                   "Lag", 
-                  "accuracy",
+                  "CI_width_reldiff",
                   color = "direction",
                   facet.by = "interaction",
                   point.size = 2, size = .5,
@@ -266,7 +299,7 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
          x = "Covariance lag", 
-         y = "Bias from the\nexpected LPI") +
+         y = "Unrepresented uncertainty") +
     scale_x_discrete(labels = function(x) paste0("Lag-", x)) +
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
@@ -276,7 +309,7 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG4_B <- ggline(df, 
                   "Lag", 
-                  "percentile",
+                  "percentile_LPIcorrected",
                   color = "direction", 
                   facet.by = "interaction",
                   point.size = 2, size = .5,
@@ -287,7 +320,7 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
     geom_hline(aes(yintercept = 0.025), lty = 4, alpha = .4) +
     geom_hline(aes(yintercept = 0.5), lty = 2, alpha = .4) +
     geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
-    labs(y = "Percentile of the\nexpected LPI", 
+    labs(y = "Percentile of the\ncorrected LPI", 
          x = "Covariance lag", 
          col = "Trend", 
          fill = "Trend") +
@@ -298,7 +331,7 @@ df <- dplyr::filter(df0, Process_error == "0" & interaction != "No Synchrony")
           legend.position = "none") +
     #coord_cartesian(ylim = c(-0.1,1.1)) +
     scale_y_continuous(breaks = c(0.025, 0.5, 0.975)))
-(FIG4_A / FIG4_B + plot_annotation(tag_levels = "a")) 
+(FIG5_C / FIG4_B + plot_annotation(tag_levels = "a")) 
 ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
 
 (FIG5_C <- ggline(df, 
@@ -319,7 +352,7 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
           strip.text = element_text(size = 14),
           panel.grid.major.y = element_line())+#,
     #legend.position = "none") +
-    coord_cartesian(ylim = c(-0.1, 0.1)) +
+    coord_cartesian(ylim = c(-0.07, 0.01)) +
     geom_hline(yintercept = 0, lwd = .2, lty = 2))
 (FIG5_D <- ggline(df, 
                   "Lag", 
@@ -341,7 +374,7 @@ ggsave("figures/fig4_lag_accuracy.png", width = 8.56, height = 6.77)
           legend.position = "none") #+
     #coord_cartesian(ylim = c(0,0.1))
   ) 
-(FIG5_C / FIG5_D + plot_annotation(tag_levels = "a")) 
+(FIG5_D / FIG4_A + plot_annotation(tag_levels = "a")) 
 ggsave("figures/fig5_lag_uncertainty.png", width = 8.56, height = 6.77)
 
 # FIG S: LAG + ERROR ----
@@ -350,7 +383,7 @@ df <- dplyr::filter(df0, interaction != "No Synchrony")
 
 (FIGSX_A <- ggline(df, 
                   "Lag", 
-                  "accuracy",
+                  "CI_width_diff",
                   color = "direction",
                   facet.by = c("interaction", "Process_error"),
                   point.size = 2, size = .3,
@@ -359,7 +392,7 @@ df <- dplyr::filter(df0, interaction != "No Synchrony")
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
          x = "Covariance lag", 
-         y = "Bias from the\nexpected LPI") +
+         y = "Unrepresented uncertainty") +
     scale_x_discrete(labels = function(x) paste0("Lag-", x)) +
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
@@ -371,7 +404,7 @@ ggsave("figures/figSX_lag_accuracy.png", width = 8.56, height = 8)
 
 (FIGSX_B <- ggline(df, 
                   "Lag", 
-                  "percentile",
+                  "percentile_LPIcorrected",
                   color = "direction", 
                   facet.by = c("interaction", "Process_error"),
                   point.size = 2, size = .3,
@@ -382,7 +415,7 @@ ggsave("figures/figSX_lag_accuracy.png", width = 8.56, height = 8)
     geom_hline(aes(yintercept = 0.025), lty = 4, alpha = .4) +
     geom_hline(aes(yintercept = 0.5), lty = 2, alpha = .4) +
     geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
-    labs(y = "Percentile of the\nexpected LPI", #expression(mu~Percentile), 
+    labs(y = "Percentile of the\ncorrected LPI", #expression(mu~Percentile), 
          x = "Covariance lag", 
          col = "Trend", 
          fill = "Trend") +

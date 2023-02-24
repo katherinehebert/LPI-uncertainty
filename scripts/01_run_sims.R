@@ -5,8 +5,6 @@
 source('scripts/scenario_functions.R')
 source('scripts/sim_mech.R')
 source('scripts/make_true.R')
-source('scripts/make_gam.R')
-source('scripts/get_lpi.R')
 
 # set theme for all ggplots
 theme_set(ggpubr::theme_pubr())
@@ -14,7 +12,7 @@ theme_set(ggpubr::theme_pubr())
 ## COMMON PARAMS ---------------------------------------------------------------
 pop_pairs = 10
 steps = 11
-obs = 5
+obs = 0.05
 
 ## CARRYING CAPACITY SCENARIOS -------------------------------------------------
 K_increase = 100 + 10*c(0:10)

@@ -1,6 +1,10 @@
 # Function to mechanically simulate two sets of interacting populations and 
 # document their properties (plot time series, calculate and plot correlation and covariance)
 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
 sim_mech <- function(
   n_pairs = 10, 
   timesteps = 10, 
@@ -104,23 +108,21 @@ sim_mech <- function(
   
   # apply observation error on the calculated population sizes
   # pick number of lognormal distribution with a mean of N and an sd of observation error
-  Ni <- apply(Ni, 1:2, function(x) {
-    xerr = rnorm(1, mean = x, sd = observation)
+  # but ensure no zeros are introduced from measurement error
+  nozeros = function(x) {
+    if(x <= 0){x = 1} # correct because cannot log 0 below
+    xerr = rlnorm(1, meanlog = log(x), sdlog = observation)
     if(xerr <= 0){
+      # keep randomizing until x is no longer zero or below
       while(xerr <= 0){
-        xerr = rnorm(1, mean = x, sd = observation)}}
-    return(xerr)
+        xerr = rlnorm(1, meanlog = log(x), sdlog = observation)
+      }
     }
-    )
-  Nj <- apply(Nj, 1:2, function(x) {
-    xerr = rnorm(1, mean = x, sd = observation)
-    if(xerr <= 0){
-      while(xerr <= 0){
-        xerr = rnorm(1, mean = x, sd = observation)}}
     return(xerr)
   }
-  )
-  
+  Ni <- apply(Ni, 1:2, nozeros) 
+  Nj <- apply(Nj, 1:2, nozeros) 
+
   # remove extra steps from introduced lag
   timesteps <- timesteps - lag_value
   Ni <- Ni[,c(2:(timesteps+1))]

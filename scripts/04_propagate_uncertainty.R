@@ -20,9 +20,8 @@ for(scenarioID in scenarios){
   Nparams <- readRDS(paste0("simulations/scenario", scenarioID, "_params.RDS"))
   
   # get sigmas
-  sigma_m <- dplyr::filter(Nparams, parameter == "Observation error")[,2:3] %>% as.vector() %>% log10()
-  sigma_p <- dplyr::filter(Nparams, parameter == "Process error")[,2:3] %>% as.vector()
-  
+  sigma_m <- dplyr::filter(Nparams, parameter == "Observation error")[,2:3] %>% as.vector() %>% apply(1:2, function(x) x^2) %>% as.vector()
+  sigma_p <- dplyr::filter(Nparams, parameter == "Process error")[,2:3] %>% as.vector() %>% apply(1:2, function(x) x^2) %>% as.vector()
   
   # pivot to wide format 
   N <- subset(Nraw, select = c(popID, time, N)) %>% 
@@ -43,8 +42,8 @@ for(scenarioID in scenarios){
     return(d)
   }
   
-  dt <- cbind(apply(N[1:10,], 1, eq2, sigma_measure = sigma_m$i),
-              apply(N[11:20,], 1, eq2, sigma_measure = sigma_m$j))
+  dt <- cbind(apply(N[1:10,], 1, eq2, sigma_measure = sigma_m[1]),
+              apply(N[11:20,], 1, eq2, sigma_measure = sigma_m[2]))
   
   
   # equation 2
@@ -70,8 +69,11 @@ for(scenarioID in scenarios){
     }
     return(eq2var)
   }
-  varonly <- cbind(apply(N[1:10,], 1, eq2_varonly, sigma_measure = sigma_m$i),
-                  apply(N[11:20,], 1, eq2_varonly, sigma_measure = sigma_m$j))
+  varonly <- cbind(apply(N[1:10,], 1, eq2_varonly, sigma_measure = sigma_m[1]),
+                  apply(N[11:20,], 1, eq2_varonly, sigma_measure = sigma_m[2]))
+  
+  save_this <- list("dt" = dt, "d" = donly, "measerr_correction" = varonly)
+  saveRDS(save_this, paste0("outputs/poptrend_estimate/scenario", scenarioID, ".rds"))
   
   # par(mfrow = c(2,2))
   # matplot(t(N), type = "l", main = "Population size", col = PNWColors::pnw_palette("Sunset2", 5), lty= 1)
@@ -89,8 +91,8 @@ for(scenarioID in scenarios){
     }
     return(eq3var)
   }
-  var_dt <- cbind(apply(N[1:10,], 1, eq3, sigma_measure = sigma_m$i, sigma_process = sigma_p$i),
-                   apply(N[11:20,], 1, eq3, sigma_measure = sigma_m$j, sigma_process = sigma_p$j))
+  var_dt <- cbind(apply(N[1:10,], 1, eq3, sigma_measure = sigma_m[1], sigma_process = sigma_p[1]),
+                   apply(N[11:20,], 1, eq3, sigma_measure = sigma_m[2], sigma_process = sigma_p[2]))
   
   # par(mfrow = c(1,3))
   # matplot(t(N), type = "l", main = "Population size", col = PNWColors::pnw_palette("Sunset2", 5), lty= 1)
@@ -115,7 +117,7 @@ for(scenarioID in scenarios){
   dt_cov <- cov(dt, use = "pairwise.complete.obs")
   dt_cov <- dt_cov[which(lower.tri(dt_cov))]
   
-  var_dtbar = (1/nrow(N))*(apply(var_dt, 1, sum) + 2*sum(dt_cov)) # FLAG ---- 
+  var_dtbar = (1/nrow(N))*(apply(var_dt, 1, sum) + 2*(abs(sum(dt_cov)))) # FLAG ---- 
   
   #plot(var_dtbar, type = "l")
   
