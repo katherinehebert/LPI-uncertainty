@@ -1,18 +1,21 @@
 # Function to mechanically simulate two sets of interacting populations and 
 # document their properties (plot time series, calculate and plot correlation and covariance)
 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
 sim_mech <- function(
-  n_pairs = 10, 
-  timesteps = 10, 
-  N0i = N0i, N0j = N0j, 
-  lambda_i = max_lambda, lambda_j = max_lambda, 
-  alpha_ij = 0, alpha_ji = 0,
-  process = proc, 
-  observation = obs,
-  K,
-  lag_value,
-  simname = filename,
-  save_figs = TRUE){
+    n_pairs = 10, 
+    timesteps = 10, 
+    lambda_i = max_lambda, lambda_j = max_lambda, 
+    alpha_ij = 0, alpha_ji = 0,
+    process = proc, 
+    observation = obs,
+    K,
+    lag_value,
+    simname = filename,
+    save_figs = TRUE){
   
   # set seed for randomisations
   set.seed(2)
@@ -68,20 +71,20 @@ sim_mech <- function(
     
     # population i
     temp_i = Ni[,t]*(1 + r_i_error*(1 - (Ni[,t] + alpha_ij*Nj[,t])/K[t]))
-
+    
     # if NAs or 0, set to 0.
     temp_i[which(is.na(temp_i))] <- 0
     temp_i[which(temp_i < 0)] <- 0
     Ni <- cbind(Ni, temp_i) # append resulting population size to results vector
-     
+    
     # population j
     temp_j = Nj[,t]*(1 + r_j_error*(1 - (Nj[,t] + alpha_ji*Ni[,t])/K[t]))
-
+    
     # if NAs or 0, set to 0.
     temp_j[which(is.na(temp_j))] <- 0
     temp_j[which(temp_j < 0)] <- 0
     Nj <- cbind(Nj, temp_j) # append resulting population size to results vector
-
+    
     ## save generated growth rates
     dt_i[,t] <- r_i_error
     dt_j[,t] <- r_j_error
@@ -91,7 +94,7 @@ sim_mech <- function(
   if(lag_value != 0){
     # print("running") # to test the loop
     Nj <- Nj[,1:(lag_value + 1)]
-
+    
     for(t in c(lag_value + 1):timesteps){
       
       # population j
@@ -100,29 +103,25 @@ sim_mech <- function(
       temp_j[which(temp_j < 0)] <- 0
       Nj <- cbind(Nj, temp_j)
     }
-
+    
   }
   
   # apply observation error on the calculated population sizes
   # pick number of lognormal distribution with a mean of N and an sd of observation error
-  # apply observation error on the calculated population sizes
-  # pick number of lognormal distribution with a mean of N and an sd of observation error
-  Ni <- apply(Ni, 1:2, function(x) {
-    xerr = rnorm(1, mean = x, sd = observation)
+  # but ensure no zeros are introduced from measurement error
+  nozeros = function(x) {
+    if(x <= 0){x = 1} # correct because cannot log 0 below
+    xerr = rlnorm(1, meanlog = log(x), sdlog = observation)
     if(xerr <= 0){
+      # keep randomizing until x is no longer zero or below
       while(xerr <= 0){
-        xerr = rnorm(1, mean = x, sd = observation)}}
+        xerr = rlnorm(1, meanlog = log(x), sdlog = observation)
+      }
+    }
     return(xerr)
   }
-  )
-  Nj <- apply(Nj, 1:2, function(x) {
-    xerr = rnorm(1, mean = x, sd = observation)
-    if(xerr <= 0){
-      while(xerr <= 0){
-        xerr = rnorm(1, mean = x, sd = observation)}}
-    return(xerr)
-  }
-  )
+  Ni <- apply(Ni, 1:2, nozeros) 
+  Nj <- apply(Nj, 1:2, nozeros) 
   
   # remove extra steps from introduced lag
   timesteps <- timesteps - lag_value
@@ -148,7 +147,7 @@ sim_mech <- function(
                             cols = !popID, 
                             names_to = "time", 
                             values_to = "N",
-                            ) %>% 
+    ) %>% 
       tidyr::separate(popID, into = c("set", "pop"), sep = "-", remove = FALSE) 
     pops_df$time <- as.integer(pops_df$time)
     return(pops_df)
@@ -178,7 +177,7 @@ sim_mech <- function(
   )
   saveRDS(params, paste0("simulations/", simname, "_params.RDS"))
   saveRDS(N, paste0("simulations/", simname, "_l.RDS"))
-
+  
   if(save_figs == FALSE){ 
     return(N)
   } else {
@@ -194,26 +193,26 @@ sim_mech <- function(
     # save outputs -----------------------------------------------------------------
     ggsave(filename = paste0(simname, "_N.png"), path = "figures/", plot = N_plot,
            width = 7, height = 5, units = "in")
-
-  
-  # calculate covariation --------------------------------------------------------
-  
-  N_w = cbind(t(Ni), t(Nj))
-  
-  # plot covariation
-  png(paste0("figures/", simname, "_cov.png"), width = 500, height = 500)
-  cov(N_w) %>% heatmap(Colv = NA, Rowv = NA, 
-                       col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdBu"))(10)),
-                       main = "Covariation")
-  dev.off()
-  
-  # plot correlation
-  png(paste0("figures/", simname, "_cor.png"), width = 500, height = 500)
-  cor(N_w) %>% heatmap(Colv = NA, Rowv = NA, 
-                       col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdBu"))(10)), 
-                       main = "Correlation")
-  dev.off()
-  
-  return(N)
-    }
+    
+    
+    # calculate covariation --------------------------------------------------------
+    
+    N_w = cbind(t(Ni), t(Nj))
+    
+    # plot covariation
+    png(paste0("figures/", simname, "_cov.png"), width = 500, height = 500)
+    cov(N_w) %>% heatmap(Colv = NA, Rowv = NA, 
+                         col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdBu"))(10)),
+                         main = "Covariation")
+    dev.off()
+    
+    # plot correlation
+    png(paste0("figures/", simname, "_cor.png"), width = 500, height = 500)
+    cor(N_w) %>% heatmap(Colv = NA, Rowv = NA, 
+                         col = (colorRampPalette(RColorBrewer::brewer.pal(8, "RdBu"))(10)), 
+                         main = "Correlation")
+    dev.off()
+    
+    return(N)
+  }
 }

@@ -18,7 +18,7 @@ scenarios <- lapply(paste0("simulations/", list.files(path = "simulations/", pat
 names(scenarios) <- gsub("_l.RDS", "", list.files(path = "simulations/", pattern = "_l.RDS"))
 
 # calculate dt via chain
-for(i in 1:length(scenarios)){
+for(i in 1:64){
   
   scenario <- scenarios[[i]] %>% group_by(set, pop) %>% group_split()
   scenario_dt <- lapply(scenario, calc_dt_chain) %>% bind_rows()

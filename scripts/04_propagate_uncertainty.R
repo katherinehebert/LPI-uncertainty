@@ -5,24 +5,23 @@ library(dplyr)
 library(tidyr)
 
 # get scenario IDs
-scenarios <- gsub("_l.RDS", "", list.files(path = "simulations/", pattern = "_l.RDS")) %>%
+scenarios <- gsub("_l.RDS", "", list.files(path = "simulations/", pattern = "_l.RDS")[1:64]) %>%
   gsub("scenario", "", .)
 
 # calculate uncertainty in each scenario
 
 for(scenarioID in scenarios){
-
+  
   ## load simulated populations --------------------------------------------------------
   
   Nraw <- readRDS(paste0("simulations/scenario", scenarioID, "_l.RDS"))
-  # if there are N = 0, add 1 individual to avoid divisions by 0
-  if(length(which(Nraw$N == 0)) > 0){Nraw$N[which(Nraw$N == 0)] <- 1}
+  # add 1 to any extinctions to avoid dividing by 0
+  if(!is.null(length(which(Nraw$N == 0)))){Nraw$N[which(Nraw$N == 0)] = 1}
   Nparams <- readRDS(paste0("simulations/scenario", scenarioID, "_params.RDS"))
   
   # get sigmas
-  sigma_m <- dplyr::filter(Nparams, parameter == "Observation error")[,2:3] %>% as.vector() %>% log10()
-  sigma_p <- dplyr::filter(Nparams, parameter == "Process error")[,2:3] %>% as.vector()
-  
+  sigma_m <- dplyr::filter(Nparams, parameter == "Observation error")[,2:3] %>% as.vector() %>% apply(1:2, function(x) x^2) %>% as.vector()
+  sigma_p <- dplyr::filter(Nparams, parameter == "Process error")[,2:3] %>% as.vector() %>% apply(1:2, function(x) x^2) %>% as.vector()
   
   # pivot to wide format 
   N <- subset(Nraw, select = c(popID, time, N)) %>% 
@@ -43,8 +42,8 @@ for(scenarioID in scenarios){
     return(d)
   }
   
-  dt <- cbind(apply(N[1:1000,], 1, eq2, sigma_measure = sigma_m$i),
-              apply(N[1001:2000,], 1, eq2, sigma_measure = sigma_m$j))
+  dt <- cbind(apply(N[1:10,], 1, eq2, sigma_measure = sigma_m[1]),
+              apply(N[11:20,], 1, eq2, sigma_measure = sigma_m[2]))
   
   
   # equation 2
@@ -65,11 +64,16 @@ for(scenarioID in scenarios){
     eq2var <- c()
     for(t in 2:length(N)){
       eq2var[t] <- (sigma_measure^2)/(2*((N[t-1])^2 - (N[t])^2))
+      # should the population sizes be logged here?
+      #eq2var[t] <- (sigma_measure^2)/(2*(log(N[t-1])^2 - log(N[t])^2))
     }
     return(eq2var)
   }
-  varonly <- cbind(apply(N[1:1000,], 1, eq2_varonly, sigma_measure = sigma_m$i),
-                  apply(N[1001:2000,], 1, eq2_varonly, sigma_measure = sigma_m$j))
+  varonly <- cbind(apply(N[1:1000,], 1, eq2_varonly, sigma_measure = sigma_m[1]),
+                   apply(N[1001:2000,], 1, eq2_varonly, sigma_measure = sigma_m[2]))
+  
+  save_this <- list("dt" = dt, "d" = donly, "measerr_correction" = varonly)
+  saveRDS(save_this, paste0("outputs/poptrend_estimate/scenario", scenarioID, ".rds"))
   
   # par(mfrow = c(2,2))
   # matplot(t(N), type = "l", main = "Population size", col = PNWColors::pnw_palette("Sunset2", 5), lty= 1)
@@ -87,8 +91,8 @@ for(scenarioID in scenarios){
     }
     return(eq3var)
   }
-  var_dt <- cbind(apply(N[1:1000,], 1, eq3, sigma_measure = sigma_m$i, sigma_process = sigma_p$i),
-                   apply(N[1001:2000,], 1, eq3, sigma_measure = sigma_m$j, sigma_process = sigma_p$j))
+  var_dt <- cbind(apply(N[1:1000,], 1, eq3, sigma_measure = sigma_m[1], sigma_process = sigma_p[1]),
+                  apply(N[1001:2000,], 1, eq3, sigma_measure = sigma_m[2], sigma_process = sigma_p[2]))
   
   # par(mfrow = c(1,3))
   # matplot(t(N), type = "l", main = "Population size", col = PNWColors::pnw_palette("Sunset2", 5), lty= 1)
@@ -113,7 +117,7 @@ for(scenarioID in scenarios){
   dt_cov <- cov(dt, use = "pairwise.complete.obs")
   dt_cov <- dt_cov[which(lower.tri(dt_cov))]
   
-  var_dtbar = (1/nrow(N))*(apply(var_dt, 1, sum) + 2*sum(dt_cov)) 
+  var_dtbar = (1/nrow(N))*(apply(var_dt, 1, sum) + 2*(abs(sum(dt_cov)))) # FLAG ---- 
   
   #plot(var_dtbar, type = "l")
   
@@ -143,8 +147,8 @@ for(scenarioID in scenarios){
   lpi_nocorrection = calclpi(dt_bar)
   lpi_correction = calclpi_corrected(dt_bar)
   
-  plot(lpi_nocorrection, type = "l", ylab = "I")
-  lines(lpi_correction, col = "purple")
+  # plot(lpi_nocorrection, type = "l", ylab = "I")
+  # lines(lpi_correction, col = "purple")
   
   ## equation 8 ----
   
@@ -172,8 +176,7 @@ for(scenarioID in scenarios){
 ## check out the results ------
 
 ## load the results
-res <- lapply(paste0("outputs/", list.files("outputs/", "_uncertaintypropagation.RDS")[-c(1,2)]), readRDS)
-names(res) <- scenarios
+res <- lapply(paste0("outputs/", list.files("outputs/", "_uncertaintypropagation.RDS")[-c(1,2,64:117)]), readRDS)
+names(res) <- paste0("scenario", scenarios[1:63])
 res <- bind_rows(res, .id = "scenario")
-res$scenario <- paste0("scenario", res$scenario)
 saveRDS(res, "outputs/all_uncertaintypropagation.RDS")
