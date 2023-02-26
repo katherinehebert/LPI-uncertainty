@@ -194,108 +194,14 @@ compare_precision <- function(simID){
 sim_ids <- c(
   paste0("1", LETTERS[1:9]),
   paste0("2", LETTERS[1:18]),
-  paste0("3", LETTERS[1:18]),
-  paste0("4", LETTERS[1:18]),
-  paste0("5", LETTERS[1:18]),
-  paste0("6", LETTERS[1:18]),
-  paste0("7", LETTERS[1:18])
+  paste0("3", LETTERS[1:18])#,
+  # paste0("4", LETTERS[1:18]),
+  # paste0("5", LETTERS[1:18]),
+  # paste0("6", LETTERS[1:18]),
+  # paste0("7", LETTERS[1:18])
 )
 # run for all scenarios
 lapply(sim_ids, compare_precision)
-
-
-# #### CALC SUCCESS RATE - this should go in accuracy_and_precision.Rmd.
-# #### Maybe plot across multiple scenarios rather than at each step?
-# df %>% 
-#   group_by(direction) %>% 
-#   summarise(p_success = length(which(true_within_rlpiCI == "Success"))/length(true_within_rlpiCI))
-# ##############
-
-# do the GAM errors correspond to the rror introduced into the time series?
-
-# import true LPI values (no error)
-# get all scenario names
-# sim_ids <- c(
-#   paste0("1", LETTERS[1:9]),
-#   paste0("2", LETTERS[1:18]),
-#   paste0("3", LETTERS[1:18]),
-#   paste0("4", LETTERS[1:18]),
-#   paste0("5", LETTERS[1:18]),
-#   paste0("6", LETTERS[1:18]),
-#   paste0("7", LETTERS[1:18])
-# )
-# gams <- lapply(sim_ids, function(x) readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/models/rlpi/scenario", x, ".rds")))
-# se <- lapply(gams, predict, se.fit = TRUE)
-
-# gamse <- list()
-# for(i in 1:length(se)) {
-#   gamse[[i]] <- data.frame("se" = se[[i]]$se.fit)
-#   colnames(gamse[[i]]) <- sim_ids[i]
-# }
-# gamse <- bind_cols(gamse)
-# 
-# pdf("outputs/measurementerror_vs_GAMerror.pdf")
-# 
-# boxplot(gamse[,grep("1", colnames(gamse))], ylim = c(0, 0.1), 
-#         col = c("tomato2", "dodgerblue2", "mediumseagreen")) # attempt
-# abline(h = 0.05, lty = 2)
-# 
-# boxplot(gamse[,grep("2", colnames(gamse))], ylim = c(0, 0.1), 
-#         col = c("tomato2", "dodgerblue2", "mediumseagreen"))
-# abline(h = 0.05, lty = 2)
-# 
-# boxplot(gamse[,grep("3", colnames(gamse))], ylim = c(0, 0.1), 
-#         col = c("tomato2", "dodgerblue2", "mediumseagreen"))
-# abline(h = 0.05, lty = 2)
-# 
-# boxplot(gamse[,grep("4", colnames(gamse))], ylim = c(0, 0.1), 
-#         col = c("tomato2", "dodgerblue2", "mediumseagreen"))
-# abline(h = 0.05, lty = 2)
-# 
-# boxplot(gamse[,grep("5", colnames(gamse))], ylim = c(0, 0.1), 
-#         col = c("tomato2", "dodgerblue2", "mediumseagreen"))
-# abline(h = 0.05, lty = 2)
-# 
-# boxplot(gamse[,grep("6", colnames(gamse))], ylim = c(0, 0.1), 
-#         col = c("tomato2", "dodgerblue2", "mediumseagreen"))
-# abline(h = 0.05, lty = 2)
-# 
-# boxplot(gamse[,grep("7", colnames(gamse))], ylim = c(0, 0.1))
-# abline(h = 0.05, lty = 2)
-# 
-# dev.off()
-
-# ## get residual error from the GAMs
-# 
-# gams <- lapply(sim_ids, function(x) readRDS(paste0("~/Documents/GitHub/LPI-sensitivity/models/scenario", x, "_gam.RDS")))
-# names(gams) = paste0("scenario", sim_ids)
-# 
-# resids <- lapply(gams, FUN = function(x){ 
-#   lapply(x, resid) %>% lapply(unlist) %>% unlist()})
-# boxplot(resids)
-# 
-# error_compare <- data.frame(
-#   "scenario" = paste0("scenario", sim_ids),
-#   "sd_resid" = lapply(resids, sd) %>% unlist()
-# )
-# 
-# toplot <- filter(error_compare, scenario %in% c(paste0("scenario", sim_ids[1:45])))
-# ggplot(toplot, aes(x=scenario, y=sd_resid)) +
-#   geom_segment(
-#     aes(x=scenario, xend=scenario, y=0, yend=sd_resid), 
-#     color=ifelse(toplot$sd_resid > 0.05, "red", "black")
-#   ) +
-#   geom_point(size = 3,
-#     color=ifelse(toplot$sd_resid > 0.05, "red", "black")
-#   ) +
-#   geom_hline(yintercept = 0.05, lty = 2) +
-#   theme(
-#     legend.position="none"
-#   ) +
-#   xlab("") +
-#   ylab("Standard deviation of the residual error") +
-#   coord_flip()
-
 
 # get percentile of the corrected and uncorrected LPI 
 # in the confidence intervals of the rlpi version

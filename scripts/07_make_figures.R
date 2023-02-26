@@ -89,7 +89,7 @@ ONE_A <- ggplot(scenarios,
         strip.text = element_text(size = 12),
         panel.grid.major.y = element_line(),
         panel.spacing.x = unit(4, "mm")) +
-  coord_cartesian(ylim = c(0, 275))
+  coord_cartesian(ylim = c(0, 2750))
 
 (ONE_B <- ggplot(df, 
                  aes(x = time-1, col = direction, group = scenario)) +

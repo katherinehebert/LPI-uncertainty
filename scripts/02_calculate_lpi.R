@@ -75,11 +75,11 @@ lpi_true <- function(scenario_name){
 sim_names <- c(
   paste0("scenario1", LETTERS[1:9]),
   paste0("scenario2", LETTERS[1:18]),
-  paste0("scenario3", LETTERS[1:18]),
-  paste0("scenario4", LETTERS[1:18]),
-  paste0("scenario5", LETTERS[1:18]),
-  paste0("scenario6", LETTERS[1:18]),
-  paste0("scenario7", LETTERS[1:18])
+  paste0("scenario3", LETTERS[1:18])#,
+  # paste0("scenario4", LETTERS[1:18]),
+  # paste0("scenario5", LETTERS[1:18]),
+  # paste0("scenario6", LETTERS[1:18]),
+  # paste0("scenario7", LETTERS[1:18])
 )
 lapply(sim_names, lpi_true)
 
@@ -145,11 +145,11 @@ lpi_calculator <- function(scenario_name){
 sim_names <- c(
   paste0("scenario1", LETTERS[1:9]),
   paste0("scenario2", LETTERS[1:18]),
-  paste0("scenario3", LETTERS[1:18]),
-  paste0("scenario4", LETTERS[1:18]),
-  paste0("scenario5", LETTERS[1:18]),
-  paste0("scenario6", LETTERS[1:18]),
-  paste0("scenario7", LETTERS[1:18])
+  paste0("scenario3", LETTERS[1:18])#,
+  # paste0("scenario4", LETTERS[1:18]),
+  # paste0("scenario5", LETTERS[1:18]),
+  # paste0("scenario6", LETTERS[1:18]),
+  # paste0("scenario7", LETTERS[1:18])
 )
 # apply to all simulations
 lapply(sim_names, lpi_calculator)              
