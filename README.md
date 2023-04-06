@@ -1,6 +1,8 @@
-# Testing the Living Planet Index's ability to capture complex biodiversity change
+# The Living Planet Index's ability to capture biodiversity change from uncertain data
 
-Code for simulations, calculations, and figures presented in the manuscript "Testing the Living Planet Index's ability to capture complex biodiversity change" by Hébert, Katherine & Gravel, Dominique.
+Code for simulations, calculations, and figures presented in the article:
+
+Hébert, K. and Gravel, D. (2023), The Living Planet Index's ability to capture biodiversity change from uncertain data. _Ecology_. https://doi.org/10.1002/ecy.4044
 
 To produce the results in the manuscript, these scripts can be run:
 
