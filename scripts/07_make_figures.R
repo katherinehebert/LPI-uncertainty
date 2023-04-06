@@ -144,7 +144,7 @@ df <- dplyr::filter(df0, Lag == 0)
     geom_hline(aes(yintercept = 0.5), lty = 2, alpha = .4) +
     geom_hline(aes(yintercept = 0.975), lty = 4, alpha = .4) +
     labs(y = "Percentile of the corrected LPI \nin the original CI", #expression(mu~Percentile),
-         x = "",
+         x = "Process uncertainty",
          col = "Trend",
          fill = "Trend") +
     theme(axis.text.x = element_text(size = 11),
@@ -164,7 +164,7 @@ df <- dplyr::filter(df0, Lag == 0)
     facet_wrap(~interaction, ncol = 5, labeller = as_labeller(facet_names)) +
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
-         x = " ",
+         x = "Process uncertainty",
          y = "Unrepresented uncertainty") +
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
@@ -182,7 +182,7 @@ df <- dplyr::filter(df0, Lag == 0)
     facet_wrap(~interaction, dir = "h", ncol = 5) + 
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
-         x = " ", 
+         x = "Process uncertainty", 
          y = "Uncertainty bias of the LPI") +
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
@@ -202,7 +202,7 @@ df <- dplyr::filter(df0, Lag == 0)
     facet_wrap(~interaction, dir = "h", nrow = 1) + #+
     scale_color_manual(values = pal_locuszoom("default")(6)[c(1,5,3)]) +
     labs(color = "Trend",
-         x = " ", 
+         x = "Process uncertainty", 
          y = "Variance of the LPI") +
     theme(axis.text.x = element_text(size = 11),
           axis.title = element_text(size = 14),
